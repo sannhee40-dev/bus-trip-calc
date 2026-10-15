@@ -2724,7 +2724,8 @@ async function autoFillFromBlobs(blobs){
     const c = e && e.code;
     rcStatus(c==='not_granted' ? 'Claude 사용을 허용하지 않아서 자동 입력을 건너뛰었어요. 직접 입력해 주세요.'
       : c==='rate_limited' ? '요청이 너무 많아요. 잠시 후 \"다시 읽어서 입력\"을 눌러 주세요.'
-      : (c==='unavailable' || c==='images_unavailable') ? '자동 입력은 게시한 링크(Claude 안)에서만 돼요. 지금 화면에서는 직접 입력해 주세요.'
+      : c==='unavailable' ? '[A] 이 화면에서는 Claude 연결이 안 돼요. Claude 앱(또는 claude.ai에 로그인한 브라우저)에서 이 링크를 열어 주세요. 지금은 직접 입력해 주세요.'
+      : c==='images_unavailable' ? '[B] 사진 전송 권한이 없어요. 페이지를 완전히 닫았다가 링크를 다시 열고, 허용 창이 뜨면 허용해 주세요.'
       : '영수증을 읽지 못했어요. 다시 시도하거나 직접 입력해 주세요.', true);
   } finally { btn.disabled = false; }
 }
