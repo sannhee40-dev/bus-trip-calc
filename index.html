@@ -584,6 +584,11 @@
       <div class="modal-status" id="receipt-status-dutch"></div>
       <button class="add-row" id="rc-reread" type="button">🔍 첨부한 영수증 다시 읽어서 입력</button>
       <div class="modal-status" id="rc-ai-status" style="font-weight:700;"></div>
+      <div style="border-top:1px dashed var(--line); margin:10px 0 8px;"></div>
+      <label style="font-size:13px; font-weight:700; display:block; margin-bottom:6px;">📋 영수증 글자 붙여넣기 <span style="font-weight:500; color:var(--ink-soft);">(자동 인식이 안 될 때)</span></label>
+      <textarea id="rc-paste" rows="4" placeholder="폰에서 영수증 사진의 글자를 복사해서 여기에 붙여 넣으세요"></textarea>
+      <button class="add-row" id="rc-paste-go" type="button">📋 붙여넣은 글자로 입력</button>
+      <p class="footnote" style="margin:6px 0 0;"><b>아이폰:</b> 사진 앱에서 영수증을 열고 글자를 길게 눌러 모두 선택 → 복사<br><b>갤럭시:</b> 갤러리에서 영수증을 열고 글자 아이콘(또는 구글 렌즈) → 텍스트 복사<br>상품명 · 단가 · 수량 · 금액이 보이게 복사해 주세요. 상품 줄이 안 읽히면 금액을 직접 고쳐 주세요.</p>
       <p class="footnote">자동 입력은 <b>총금액 · 식대(메뉴) · 주류 · 음료수</b>만 채워요. 인원과 먹은 사람은 직접 넣어 주세요. 읽은 결과가 틀릴 수 있으니 금액을 꼭 확인해 주세요. 영수증을 여러 장 올리면 금액이 이어서 더해져요.<br>식당 영수증·결제 내역 사진을 올리면 더치페이 이미지 오른쪽에 같이 들어가요. 사진은 용량을 줄여서 저장하고, 최대 6장까지 올릴 수 있어요.</p>
       </div>
       <div class="field" style="margin-top:10px;"><label>총금액</label><input class="num-in money" type="text" inputmode="numeric" id="dp-total"></div>
@@ -2724,12 +2729,82 @@ async function autoFillFromBlobs(blobs){
     const c = e && e.code;
     rcStatus(c==='not_granted' ? 'Claude 사용을 허용하지 않아서 자동 입력을 건너뛰었어요. 직접 입력해 주세요.'
       : c==='rate_limited' ? '요청이 너무 많아요. 잠시 후 \"다시 읽어서 입력\"을 눌러 주세요.'
-      : c==='unavailable' ? '[A] 이 화면에서는 Claude 연결이 안 돼요. Claude 앱(또는 claude.ai에 로그인한 브라우저)에서 이 링크를 열어 주세요. 지금은 직접 입력해 주세요.'
+      : c==='unavailable' ? '[A] 이 화면에서는 Claude 연결이 안 돼요. Claude 앱(또는 claude.ai에 로그인한 브라우저)에서 이 링크를 열어 주세요. 지금은 아래 "영수증 글자 붙여넣기"를 이용하거나 직접 입력해 주세요.'
       : c==='images_unavailable' ? '[B] 사진 전송 권한이 없어요. 페이지를 완전히 닫았다가 링크를 다시 열고, 허용 창이 뜨면 허용해 주세요.'
       : '영수증을 읽지 못했어요. 다시 시도하거나 직접 입력해 주세요.', true);
   } finally { btn.disabled = false; }
 }
+/* 영수증 글자(폰의 텍스트 인식으로 복사한 글)를 읽어서 상품·금액으로 나눠요 */
+const RC_NOISE = /상\s*품\s*명|단\s*가|수\s*량|금\s*액|영\s*수\s*증|사업자|매장명|대표자|전화|TEL|주\s*소|매출일|부가|과세|면세|카드|승인|가맹점|거래|할부|일시불|서명|인지|물품|반품|교환|바코드|감사|\d{4}[-./]\d{2}[-./]\d{2}|\d{2}:\d{2}/i;
+const RC_TOTAL = /합\s*계|받을|받은|결제|총\s*금\s*액|청구|총\s*액/;
+function rcNums(line){
+  const out = [], re = /\d{1,3}(?:,\d{3})+|\d+/g; let m;
+  while((m = re.exec(line))){
+    const t = m[0];
+    if(!t.includes(',') && (/^0\d/.test(t) || t.length>=8)) continue;   /* 000004 같은 상품코드·바코드는 빼요 */
+    out.push(Math.round(Number(t.replace(/,/g,''))));
+  }
+  return out;
+}
+function rcParseText(txt){
+  const lines = String(txt||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const items = [], totals = [];
+  let name = '', buf = [];
+  const flush = ()=>{
+    for(let i=0;i+2<buf.length;i++){
+      const [u,q,a] = [buf[i],buf[i+1],buf[i+2]];
+      if(u>0 && q>0 && q<1000 && u*q===a){
+        if(name){ items.push({ name, qty:q, unit:u, amount:a }); buf = buf.slice(i+3); name = ''; return true; }
+      }
+    }
+    return false;
+  };
+  for(const ln of lines){
+    const nums = rcNums(ln);
+    const text = ln.replace(/\d{1,3}(?:,\d{3})+|\d+/g,' ').replace(/[^가-힣A-Za-z()\s&.+\-]/g,' ').replace(/\s+/g,' ').trim();
+    if(RC_TOTAL.test(ln) && !/부가|과세|면세|물품/.test(ln)){
+      if(nums.length) totals.push(Math.max(...nums));
+      continue;
+    }
+    if(RC_NOISE.test(ln) && !nums.length){ name=''; buf=[]; continue; }
+    if(RC_NOISE.test(ln)) continue;
+    if(text.length>=2 && /[가-힣A-Za-z]/.test(text)){
+      if(name && !buf.length){ /* 이름 줄이 연달아 나오면 새 이름으로 */ }
+      if(buf.length && flush()){ /* 앞 상품 마무리 */ }
+      name = text; if(!nums.length) buf = [];
+    }
+    buf.push(...nums);
+    flush();
+  }
+  const sum = items.reduce((t,i)=>t+i.amount,0);
+  /* 합계 후보 중 상품 합과 같은 값을 먼저, 없으면 가장 큰 값 */
+  const total = totals.find(t=>t===sum) || (totals.length ? Math.max(...totals) : sum);
+  return { items, sum, total };
+}
+
+async function pasteFillReceipt(){
+  const ta = document.getElementById('rc-paste'), btn = document.getElementById('rc-paste-go');
+  const txt = ta.value;
+  if(!txt.trim()){ rcStatus('먼저 영수증 글자를 붙여 넣어 주세요.', true); return; }
+  const p = rcParseText(txt);
+  if(!p.items.length){ rcStatus('상품 줄을 찾지 못했어요. 상품명과 단가·수량·금액이 함께 보이게 다시 복사해 주세요.', true); return; }
+  const D = state.dutch;
+  const hasData = num(D.total)>0 || (D.alcohol||[]).some(x=>num(x.amount)) || (D.drinks||[]).some(x=>num(x.amount)) || (D.menus||[]).some(x=>num(x.amount));
+  let append = !!D.rcFilled;
+  if(!append && hasData && !(await openDialog('이미 입력된 총금액·식대·주류·음료수가 영수증 내용으로 바뀌어요. 계속할까요?', { okText:'영수증으로 입력' }))){ rcStatus('입력을 취소했어요.'); return; }
+  btn.disabled = true;
+  try{
+    const items = p.items.map(it=>{
+      const cat = RC_ALC.test(it.name) ? 'alcohol' : (RC_DRK.test(it.name) ? 'drink' : 'food');
+      return { name: it.qty>1 ? `${it.name} ×${it.qty}` : it.name, amount: it.amount, cat };
+    });
+    await applyReceiptData({ items, total: p.total, sum: p.sum }, append);
+    ta.value = '';
+    rcStatus(`✅ 상품 ${items.length}개를 읽어서 입력했어요 · 총금액 ${KRW(state.dutch.total)}.` + (p.sum!==p.total ? ` ⚠️ 상품 합계 ${KRW(p.sum)}와 영수증 합계 ${KRW(p.total)}가 달라요. 빠진 상품이 없는지 확인해 주세요.` : ' 메뉴명·금액을 확인해 주세요.'), p.sum!==p.total);
+  } finally { btn.disabled = false; }
+}
 function initReceiptAI(){
+  document.getElementById('rc-paste-go').addEventListener('click', pasteFillReceipt);
   document.getElementById('rc-reread').addEventListener('click', async ()=>{
     const list = rcList('dutch');
     if(!list.length){ rcStatus('먼저 영수증 사진을 올려 주세요.', true); return; }
