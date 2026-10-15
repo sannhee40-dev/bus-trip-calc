@@ -1,0 +1,3094 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>버스 정산 · 좌석표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    box-sizing:border-box;
+    --bg:#F0F4EF; --surface:#FFFFFF; --ink:#1E2A22; --ink-soft:#5B6B60; --line:#DCE5DC;
+    --accent:#2F6B4F; --accent-soft:#E1EFE6;
+    --income:#2E7D5B; --income-soft:#E4F3EC;
+    --expense:#B0492E; --expense-soft:#FBEAE4;
+    --highlight:#F4B942; --highlight-soft:#FCF1D8;
+    --sum-inc:#C6EEC5; --sum-exp:#C9EDFB; --sum-grand:#F3CFED; --sum-red:#D32020;
+    --danger:#C0392B;
+    --input-bg:#FFF8CC; --input-line:#DDBF45; --input-ink:#2A2612; --input-ph:#9A8F5A; --auto-bg:#E7EAEE; --auto-line:#B9C0C9;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#131712; --surface:#1B2119; --ink:#EAF0E8; --ink-soft:#9DAE9F; --line:#2B342B;
+      --accent:#6FCF9B; --accent-soft:#1E2E24;
+      --income:#7FD3AA; --income-soft:#1D3327; --expense:#E68A6F; --expense-soft:#3A2521;
+      --highlight:#F4B942; --highlight-soft:#3A2F16;
+      --sum-inc:#21402D; --sum-exp:#1F3547; --sum-grand:#43294A; --sum-red:#FF8A80;
+      --input-bg:#3F3612; --input-line:#8A7425; --input-ink:#FFF3C4; --input-ph:#B3A56A; --auto-bg:#262B26; --auto-line:#46514A;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#131712; --surface:#1B2119; --ink:#EAF0E8; --ink-soft:#9DAE9F; --line:#2B342B;
+    --accent:#6FCF9B; --accent-soft:#1E2E24;
+    --income:#7FD3AA; --income-soft:#1D3327; --expense:#E68A6F; --expense-soft:#3A2521;
+    --highlight:#F4B942; --highlight-soft:#3A2F16;
+      --sum-inc:#21402D; --sum-exp:#1F3547; --sum-grand:#43294A; --sum-red:#FF8A80;
+    --input-bg:#3F3612; --input-line:#8A7425; --input-ink:#FFF3C4; --input-ph:#B3A56A; --auto-bg:#262B26; --auto-line:#46514A;
+  }
+  *{box-sizing:border-box;}
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width: 1000px; margin:0 auto; padding: 26px 16px 70px; }
+  header.top{ margin-bottom:18px; }
+  header.top h1{ font-family:'Jua', sans-serif; font-size:25px; margin:0 0 4px; color:var(--accent); }
+  header.top p{ margin:0; color:var(--ink-soft); font-size:13.5px; }
+  .reset-link{
+    background:none;border:none;color:var(--ink-soft);font-size:12.5px;
+    text-decoration:underline;cursor:pointer;padding:0;font-family:inherit;float:right;margin-top:6px;
+  }
+  .headline-inputs{ display:flex; gap:10px; flex-wrap:wrap; margin: 16px 0 20px; }
+  .headline-inputs input{ flex:1; min-width:150px; }
+
+  .tabs{ display:flex; gap:4px; margin-bottom:18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .tab-btn{
+    appearance:none; background:none; border:none; font-family:inherit; font-size:14.5px; font-weight:700;
+    color:var(--ink-soft); padding:10px 4px; margin-right:20px; cursor:pointer;
+    border-bottom:2px solid transparent; transform: translateY(1px);
+  }
+  .tab-btn.active{ color:var(--ink); border-bottom-color:var(--accent); }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 18px 16px; margin-bottom:16px; }
+  .card.auto-card{ background:var(--accent-soft); border-color:var(--accent); }
+  .card.auto-card h2{ color:var(--accent); }
+  .card h2{ font-size:14.5px; font-weight:700; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+  .card h2 .tag{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+  .tag.income{ background:var(--income-soft); color:var(--income); }
+  .tag.expense{ background:var(--expense-soft); color:var(--expense); }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; }
+  .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px 10px; }
+  @media (max-width:520px){ .grid3{ grid-template-columns:1fr; } }
+  .seat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+  @media (max-width:860px){ .seat-grid{ grid-template-columns:1fr; } }
+  /* 좁은 화면(폰): 엑셀로 불러오기·입력칸을 먼저 보여주고, 좌석표 화면은 그 아래로 */
+  @media (max-width:520px){
+    .wrap{ padding:18px 10px 60px; }
+    #live-seat-sheet .seat-sheet-flex{ flex-direction:column; }
+    #live-seat-sheet .seat-sheet-flex > div:last-child{ width:100% !important; }
+    #live-seat-sheet .bus-photo{ height:90px; }
+  }
+  .field label{ display:block; font-size:12px; color:var(--ink-soft); margin-bottom:4px; }
+
+  input[type=text], input[type=number], input[type=date], select{
+    width:100%; font-family:inherit; font-size:14px; color:var(--ink);
+    background:var(--bg); border:1px solid var(--line); border-radius:7px; padding:8px 9px;
+  }
+  input[type=color]{ width:38px; height:34px; padding:2px; border:1px solid var(--line); border-radius:7px; background:var(--bg); cursor:pointer; }
+  input:focus, select:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  input.num-in{ text-align:right; font-variant-numeric: tabular-nums; }
+
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  th{ text-align:left; color:var(--ink-soft); font-weight:600; font-size:12.5px; padding:6px 8px; border-bottom:1px solid var(--line); }
+  td{ padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+  .num{ text-align:right; font-variant-numeric: tabular-nums; white-space:nowrap; }
+  .row-yellow td{ background:var(--highlight-soft); }
+  .amt-cell{ width:130px; } .name-cell{ min-width:120px; }
+
+  .loc-row, .seat-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .seat-row{ border-radius:8px; padding:3px 6px 3px 4px; border-left:6px solid transparent; }
+  .loc-row input[type=text]{ flex:1; }
+  .loc-row .cnt{ font-size:12px; color:var(--ink-soft); white-space:nowrap; min-width:44px; text-align:right; }
+  .seat-row .no{ width:40px; text-align:center; font-size:12.5px; color:var(--ink-soft); flex-shrink:0; }
+  .seat-row input[type=text]{ flex:1.4; } .seat-row select{ flex:1; }
+
+  .icon-btn{
+    appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);
+    border-radius:7px; width:30px; height:30px; font-size:15px; cursor:pointer; flex-shrink:0;
+  }
+  .icon-btn:hover{ color:var(--danger); border-color:var(--danger); }
+  .add-row{
+    appearance:none; border:1px dashed var(--line); background:none; color:var(--accent); font-family:inherit;
+    font-size:13px; font-weight:600; border-radius:8px; padding:8px 10px; margin-top:8px; cursor:pointer; width:100%;
+  }
+  .add-row:hover{ background:var(--accent-soft); }
+
+  .subtotal-line{ display:flex; justify-content:space-between; padding:8px 2px 2px; font-size:13.5px; color:var(--ink-soft); }
+  .subtotal-line b{ color:var(--ink); font-variant-numeric: tabular-nums; }
+
+  .summary{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:0; display:grid; gap:0; margin-bottom:18px; overflow:hidden; }
+  .summary-row{ display:flex; justify-content:space-between; align-items:baseline; font-size:15px; padding:15px 20px; }
+  .summary-row.inc{ background:var(--sum-inc); }
+  .summary-row.exp{ background:var(--sum-exp); }
+  .summary-row.total{ background:var(--sum-grand); font-size:17px; font-weight:800; padding:17px 20px; }
+  .summary-row.total .v{ color:var(--sum-red); }
+  .summary-row.inc .v, .summary-row.exp .v{ color:var(--ink); font-weight:700; }
+  .summary-row .v{ font-variant-numeric: tabular-nums; }
+  .v.pos{ color:var(--income); } .v.neg{ color:var(--expense); }
+
+  .dish-editor{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .dish-chip{ display:flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent); border-radius:20px; padding:5px 6px 5px 12px; font-size:13px; font-weight:600; }
+  .dish-chip button{ appearance:none; border:none; background:none; color:inherit; cursor:pointer; font-size:14px; width:20px; height:20px; border-radius:50%; }
+  .dish-chip button:hover{ background: rgba(0,0,0,0.08); }
+
+  .footnote{ color:var(--ink-soft); font-size:12.5px; margin-top:4px; }
+  .btn-primary{
+    appearance:none; border:none; background:var(--accent); color:#fff; font-family:inherit; font-weight:700;
+    font-size:14px; padding:10px 16px; border-radius:9px; cursor:pointer;
+  }
+  .btn-primary:disabled{ opacity:0.5; cursor:default; }
+  .toolbar{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; margin: 2px 0 16px; }
+
+  /* export sheets */
+  #export-host{ position:fixed; top:0; left:-99999px; z-index:-1; }
+  .sheet{ width:720px; background:#FFFFFF; color:#1B2333; font-family:'Noto Sans KR', sans-serif; padding:22px 24px 26px; }
+  .sheet-head{ display:flex; align-items:center; justify-content:space-between; padding-bottom:10px; margin-bottom:14px; }
+  .sheet-head .htitle{ font-size:18px; font-weight:700; color:#1B2333; display:flex; align-items:center; gap:8px; }
+  .sheet-head .hsub{ font-size:12px; color:#5A6472; }
+  .sheet table{ width:100%; border-collapse:collapse; font-size:13px; }
+  .sheet col.c-narrow{ width:78px; }
+  .sheet th, .sheet td{ border:1px solid #9FB4CC; }
+  .sheet th{ background:#D9E6F5; color:#1B2333; font-weight:700; padding:8px 6px; text-align:center; }
+  .sheet td{ padding:7px 9px; color:#1B2333; background:#fff; }
+  .sheet td.num, .sheet th.num{ text-align:right; font-variant-numeric: tabular-nums; }
+  .sheet td.ctr{ text-align:center; }
+  .sheet tr.zebra td{ background:#F3F7FC; }
+  .sheet td.yellow-cell{ background:#FCE97A !important; }
+  .sheet td.red-text{ color:#C0392B; font-weight:700; }
+  .sheet tr.grand td{ background:#F6C9A0; color:#B0311A; font-weight:800; font-size:14.5px; text-align:center; }
+  .sheet .section-label{ font-weight:700; color:#1B2333; text-align:center; vertical-align:middle; background:#EDF3FA; }
+  .sheet .small{ font-size:11px; color:#5A6472; margin-top:2px; }
+
+  /* seat sheet specifics */
+  .seat-sheet-title{ text-align:center; margin-bottom:14px; }
+  .seat-sheet-title .mt{ font-size:20px; font-weight:800; }
+  .seat-sheet-title .dt{ font-size:13px; color:#5A6472; margin-top:2px; }
+  .seat-sheet-flex{ display:flex; gap:14px; }
+  .seat-sheet-left{ flex:1; }
+  .seat-chart{ border:1px solid #333; border-bottom:none; font-size:12px; }
+  .seat-header-row{ display:flex; border-bottom:1px solid #333; }
+  .seat-header-row .lbl{ flex:1; text-align:center; font-weight:700; padding:5px 2px; }
+  .seat-flex-row{ display:flex; border-bottom:1px solid #333; }
+  .seat-cell{ flex:1; text-align:center; border-right:1px solid #333; }
+  .seat-cell:last-child{ border-right:none; }
+  .seat-cell .seat-num{ font-size:10.5px; color:#333; padding-top:4px; }
+  .seat-cell .seat-name{ font-weight:700; padding-bottom:6px; }
+  .seat-gap-cell{ flex:0 0 14px; background:#fff; }
+  .bus-info-box{ border:2px solid #1B2333; border-radius:10px; padding:10px 12px; font-size:12px; margin-top:10px; line-height:1.65; }
+  .bus-info-box b{ display:block; margin-bottom:4px; }
+  .bus-photo{ width:100%; border-radius:8px; display:block; object-fit:cover; height:110px; background:#ddd; }
+
+  textarea{ width:100%; font-family:inherit; font-size:14px; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:7px; padding:8px 9px; resize:vertical; min-height:64px; }
+  textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .car-row{ display:grid; grid-template-columns: 96px 1fr 30px; gap:6px 8px; align-items:center; padding:10px; margin-bottom:8px; border:1px solid var(--line); border-radius:9px; background:var(--bg); }
+  .car-row .c2{ grid-column: 1 / span 1; }
+  .car-row .wide{ grid-column: 2 / span 2; }
+  .sheet .car-table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:12px; border:1px solid #333; }
+  .sheet .car-table td{ border:1px solid #333; padding:5px 7px; color:#1B2333; background:#fff; }
+  .sheet .car-table td.ch{ background:#EDEDED; font-weight:700; text-align:center; }
+  .sheet .remark-box{ margin-top:10px; border:1px solid #333; padding:8px 10px; font-size:12px; line-height:1.6; color:#1B2333; }
+
+  .chk{ display:flex; align-items:center; gap:8px; font-size:13.5px; margin-bottom:12px; cursor:pointer; }
+  .sub-h{ font-size:13px; font-weight:700; margin:16px 0 8px; }
+  .rc-list{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .rc-item{ position:relative; width:84px; height:84px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--bg); }
+  .rc-item img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .rc-x{ position:absolute; top:3px; right:3px; width:22px; height:22px; border-radius:50%; border:none; background:rgba(0,0,0,.6); color:#fff; font-size:14px; line-height:1; cursor:pointer; }
+
+  /* 정산내역 이미지 (버스비 · 자차 공통) */
+  .sheet table.lg{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; border:2px solid #222; }
+  .sheet table.lg th, .sheet table.lg td{ border:1px solid #222; padding:10px; color:#111; background:#fff; vertical-align:middle; }
+  .sheet table.lg th{ text-align:center; font-weight:700; }
+  .sheet table.lg td.lg-inc-l{ background:#B7E4C0; text-align:center; font-weight:700; }
+  .sheet table.lg td.lg-inc{ background:#C6EEC5; }
+  .sheet table.lg td.lg-exp-l{ background:#C9EDFB; text-align:center; font-weight:700; }
+  .sheet table.lg td.lg-sub{ text-align:center; }
+  .sheet table.lg td.num{ text-align:right; }
+  .sheet table.lg tr.lg-sum td{ background:#C9EDFB; }
+  .sheet table.lg tr.lg-grand td{ background:#F3CFED; text-align:center; font-weight:800; font-size:14px; }
+  .sheet table.lg td.lg-red{ color:#D32020; font-weight:800; }
+  .sheet table.lg .small{ font-size:11.5px; color:#444; margin-top:3px; }
+  .sheet .lg-flex{ display:flex; gap:14px; align-items:flex-start; }
+  .sheet .lg-main{ flex:1; min-width:0; }
+  .sheet .rc-col{ flex:0 0 196px; width:196px; display:flex; flex-direction:column; gap:8px; }
+  .sheet .rc-col img{ width:100%; display:block; border:1px solid #cfd6df; border-radius:4px; }
+
+  /* 개인별 정산: 좌석 표시 */
+  .seat-tag{ display:inline-block; padding:2px 10px; border-radius:12px; border:1px solid var(--line); font-size:12.5px; font-weight:600; white-space:nowrap; }
+  .seat-none{ color:var(--ink-soft); }
+  td.p-seat{ white-space:nowrap; }
+
+  .send-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .send-btn{ appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-family:inherit; font-size:13.5px; font-weight:700; padding:9px 15px; border-radius:20px; cursor:pointer; }
+  .send-btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .send-btn:hover{ border-color:var(--accent); }
+  .st-item{ display:grid; grid-template-columns:1fr 130px 30px; gap:6px 8px; align-items:center; padding:10px; margin-bottom:8px; border:1px solid var(--line); border-radius:9px; background:var(--bg); }
+  .st-item .wide{ grid-column:1 / span 3; }
+  .st-item .span2{ grid-column:2 / span 2; }
+  .st-person{ display:grid; grid-template-columns:1fr 78px 110px 30px; gap:6px; align-items:center; margin-bottom:6px; }
+  .st-wrap table.st-tbl{ border-collapse:collapse; font-size:12px; width:100%; min-width:640px; }
+  .st-wrap table.st-tbl th, .st-wrap table.st-tbl td{ border:1px solid #777; padding:4px 7px; color:#111; background:#fff; text-align:right; white-space:nowrap; vertical-align:middle; }
+  .st-wrap table.st-tbl th{ background:#E4DDF0; text-align:center; font-weight:700; }
+  .st-wrap table.st-tbl th.st-tot{ background:#fff; font-weight:600; }
+  .st-wrap table.st-tbl th.st-sum, .st-wrap table.st-tbl td.st-sum{ background:#FCE4D6; font-weight:700; }
+  .st-wrap table.st-tbl th.st-dep{ background:#33D9EE; }
+  .st-wrap table.st-tbl td.st-dep{ background:#7FEAF7; font-weight:800; }
+  .st-wrap table.st-tbl td.st-no{ background:#E4DDF0; text-align:center; }
+  .st-wrap table.st-tbl td.st-name{ background:#E4DDF0; text-align:center; font-weight:600; }
+  .st-wrap table.st-tbl td.st-tag{ background:#C5E0B4; text-align:center; font-weight:700; }
+  .st-wrap table.st-tbl td.st-dash{ text-align:center; }
+  .st-wrap table.st-tbl tr.st-hl td{ background:#FFF59D; }
+  .st-wrap table.st-tbl tr.st-hl td.st-no, .st-wrap table.st-tbl tr.st-hl td.st-name{ background:#FFF59D; }
+  .st-wrap table.st-tbl tr.st-foot td{ background:#F3EEF9; font-weight:800; }
+  .st-wrap .st-title{ text-align:center; font-size:20px; font-weight:800; margin:2px 0 12px; color:#111; }
+  .sheet table.pm-chart td.pm-driver{ background:#E3EAF3; font-weight:700; text-align:center; padding:6px 2px; }
+  .sheet table.pm-chart td.pm-glass{ background:#DCE6F0; text-align:center; font-weight:700; color:#456; }
+  .sheet table.pm-chart td.pm-door{ background:#F1F1F1; text-align:center; font-weight:700; color:#777; }
+  .sheet table.pm-chart td.pm-aisle-lbl{ border:none !important; background:#EEF3F8 !important; text-align:center; color:#6A7A8A; font-size:12px; font-weight:700; line-height:1.9; }
+  .lodge-row{ display:grid; grid-template-columns:1fr 140px 30px; gap:6px 8px; align-items:center; padding:10px; margin-bottom:8px; border:1px solid var(--line); border-radius:9px; background:var(--bg); }
+  .lodge-row .wide{ grid-column:1 / span 3; }
+  .lodge-info{ grid-column:1 / span 3; font-size:12.5px; color:var(--ink-soft); }
+  td.note-cell input{ min-width:120px; }
+  .rc-list.big .rc-item{ width:110px; height:110px; }
+  .non-box{ margin:0 0 16px; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); }
+  .non-box > label{ display:block; font-size:13px; font-weight:700; margin-bottom:8px; }
+  .non-input-row{ display:flex; gap:8px; }
+  .non-input-row input{ flex:1; min-width:0; }
+  .nd-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .nd-chip{ display:inline-flex; align-items:center; gap:2px; padding:3px 3px 3px 11px; border-radius:14px; background:rgba(80,170,220,.2); border:1px solid rgba(80,170,220,.55); font-size:13px; font-weight:600; }
+  .nd-chip button{ border:none; background:none; cursor:pointer; color:inherit; font-size:15px; line-height:1; padding:0 7px; }
+  tr.row-non td{ background:rgba(80,170,220,.14); }
+  tr.row-nofood td{ background:rgba(240,160,60,.16); }
+  .nd-chip.nf-chip{ background:rgba(240,160,60,.22); border-color:rgba(240,160,60,.7); }
+  td.chk-cell{ text-align:center; }
+  td.chk-cell input[type=checkbox]{ width:18px; height:18px; cursor:pointer; }
+  .field-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; }
+  #dp-non.auto-lock{ background:var(--auto-bg); border-color:var(--auto-line); color:var(--ink-soft); }
+  .sort-bar{ display:flex; gap:8px; align-items:center; margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); }
+  .sort-btn{ appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-family:inherit; font-size:12.5px; font-weight:600; padding:5px 13px; border-radius:16px; cursor:pointer; }
+  .sort-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .sort-btn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* 호차 탭 / 호차별 파일 선택 */
+  .bus-tabs{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin:0 0 14px; }
+  .bus-tab{ appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); font-family:inherit; font-weight:700; font-size:13.5px; padding:7px 15px; border-radius:20px; cursor:pointer; }
+  .bus-tab.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .bus-tab.add{ border-style:dashed; color:var(--accent); background:none; }
+  .bus-tab-wrap{ display:inline-flex; align-items:center; border:1px solid var(--line); background:var(--surface); border-radius:20px; overflow:hidden; }
+  .bus-tab-wrap.active{ background:var(--accent); border-color:var(--accent); }
+  .bus-tab-wrap .bus-tab{ border:none; background:transparent; border-radius:0; padding:7px 6px 7px 15px; }
+  .bus-tab-wrap .bus-tab:last-child{ padding-right:15px; }
+  .bus-tab-wrap.active .bus-tab{ color:#fff; }
+  .bus-x{ appearance:none; border:none; background:none; color:var(--ink-soft); font-size:16px; line-height:1; padding:0 12px 0 2px; cursor:pointer; align-self:stretch; }
+  .bus-x:hover{ color:var(--danger); }
+  .bus-tab-wrap.active .bus-x{ color:#fff; }
+  .bus-tab-wrap.active .bus-x:hover{ color:#FFD7D0; }
+  .bus-del{ appearance:none; border:none; background:none; color:var(--ink-soft); font-family:inherit; font-size:12.5px; text-decoration:underline; cursor:pointer; margin-left:6px; }
+  .xl-bus-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .xl-bus-row .bn{ font-weight:700; font-size:13px; min-width:46px; }
+  .xl-bus-row .bc{ font-size:12px; color:var(--ink-soft); }
+  .xl-bus-row input[type=file]{ max-width:100%; }
+
+  /* 20인승 프리미엄 좌석 배치 */
+  .sheet table.pm-chart{ table-layout:fixed; border-collapse:collapse; width:100%; font-size:12px; }
+  .sheet table.pm-chart td{ border:1px solid #333; padding:0; text-align:center; background:#fff; }
+  .sheet table.pm-chart td.pm-head{ font-weight:700; padding:6px 2px; font-size:12.5px; }
+  .sheet table.pm-chart td.pm-none, .sheet table.pm-chart td.pm-empty, .sheet table.pm-chart td.pm-aisle{ border:none !important; background:transparent !important; }
+  .sheet table.pm-chart td.pm-seat .seat-num{ font-size:10.5px; color:#333; padding-top:4px; }
+  .sheet table.pm-chart td.pm-seat .seat-name{ font-weight:700; padding-bottom:6px; }
+
+  /* 픽업 테이블 테두리 및 색상 고정 수정 */
+  .pickup-table{ width:100%; border-collapse:collapse; margin-top:14px; font-size:12.5px; border:1px solid #333; }
+  .pickup-table td{ border:1px solid #333; padding:6px 8px; color:#1B2333; }
+  .pickup-table .club-cell{ text-align:center; font-size:11px; font-weight:700; width:110px; background:#ffffff; }
+  .pickup-table .cnt-cell{ text-align:right; font-weight:700; width:60px; }
+  .pickup-table .total-row-cell{ background:#FFFF00 !important; text-align:right; font-weight:800; border:1px solid #333 !important; }
+
+  .modal-backdrop{ position:fixed; inset:0; background: rgba(10,14,10,0.6); display:none; align-items:center; justify-content:center; padding:24px; z-index:1000; }
+  .modal-backdrop.open{ display:flex; }
+  .modal-box{ background:var(--surface); border-radius:12px; max-width:640px; width:100%; max-height:90vh; overflow:auto; padding:18px; }
+  .modal-box img{ width:100%; border-radius:6px; border:1px solid var(--line); display:block; }
+  .modal-status{ font-size:12.5px; color:var(--ink-soft); margin-top:8px; min-height:16px; }
+  .modal-actions{ display:flex; gap:10px; margin-top:12px; }
+  .modal-actions button{
+    flex:1; font-family:inherit; font-size:14px; font-weight:600; padding:10px; border-radius:7px; cursor:pointer;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  }
+  .modal-actions button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  @media (max-width:520px){ .tab-btn{ margin-right:9px; font-size:13.5px; } }
+  .menu-row{ display:grid; grid-template-columns:1fr 1fr 30px; gap:8px; padding:10px; margin-bottom:8px; border:1px solid var(--line); border-radius:9px; background:var(--bg); align-items:end; }
+  .menu-row .m-top{ grid-column:1 / span 2; }
+  .menu-row .m-wide{ grid-column:1 / span 3; }
+  .menu-row .m-non{ grid-column:1; }
+  .menu-row .m-drk{ grid-column:2; }
+  .menu-row .m-f label{ display:block; font-size:12px; color:var(--ink-soft); margin-bottom:3px; }
+  .menu-row .icon-btn{ align-self:center; }
+  .dp-auto{ padding:8px 9px; font-size:14px; text-align:right; font-variant-numeric:tabular-nums; border:1px solid var(--auto-line); background:var(--auto-bg); border-radius:7px; color:var(--ink-soft); min-height:36px; box-sizing:border-box; }
+  /* 직접 입력하는 칸은 노란색, 자동 계산되는 칸은 회색으로 구분해요 */
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    background:var(--input-bg); border:1px solid var(--input-line); color:var(--input-ink);
+  }
+  input::placeholder, textarea::placeholder{ color:var(--input-ph); opacity:1; }
+  .key-legend{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; font-size:12.5px; color:var(--ink-soft); margin:-8px 0 14px; }
+  .key-legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .key-chip{ display:inline-block; width:22px; height:14px; border-radius:4px; }
+  .key-chip.in{ background:var(--input-bg); border:1px solid var(--input-line); }
+  .key-chip.auto{ background:var(--auto-bg); border:1px solid var(--auto-line); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <button class="reset-link" onclick="resetAll()">전체 초기화</button>
+    <h1>🚌⛰️ 버스 정산 · 좌석표</h1>
+    <p>회비 정산부터 좌석 배정까지 한 곳에서 입력하고, 각 화면을 이미지(JPG)로 저장할 수 있어요.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="seat">좌석표</button>
+    <button class="tab-btn" data-tab="ledger">정산내역(버스비..)</button>
+    <button class="tab-btn" data-tab="dutch">당일 더치페이(1/N)</button>
+    <button class="tab-btn" data-tab="people">개인별 식대 정산(자동)</button>
+    <button class="tab-btn" data-tab="lodge">숙박</button>
+    <button class="tab-btn" data-tab="settle">숙박 정산</button>
+  </div>
+  <div class="key-legend"><span><i class="key-chip in"></i>노란 칸: 직접 입력</span><span><i class="key-chip auto"></i>회색 칸: 자동 계산</span></div>
+
+  <div class="toolbar">
+    <button class="btn-primary" onclick="openJpg()">🖼️ 화면과 같이 JPG로 보기</button>
+    <button class="send-btn" type="button" onclick="saveXlsx()">💾 엑셀로 저장</button>
+    <button class="send-btn" type="button" onclick="document.getElementById('xl-load-input').click()">📂 엑셀에서 불러오기</button>
+    <input type="file" id="xl-load-input" accept=".xlsx" style="display:none">
+    <div class="modal-status" id="xl-backup-status" style="width:100%; line-height:1.6;"></div>
+  </div>
+
+  <section class="panel active" id="panel-seat">
+    <div class="bus-tabs" id="bus-tabs"></div>
+    <div class="seat-grid">
+      <div>
+        <div class="card" id="xl-import-card">
+          <h2>📥 엑셀로 불러오기 <span style="font-weight:600; font-size:12.5px; color:var(--ink-soft);">(밴드에서 좌석투표 엑셀파일)</span></h2>
+          <p class="footnote" style="margin:0 0 10px;">밴드에서 내려받은 <b>좌석투표 엑셀파일</b>과 <b>탑승지 엑셀파일</b>(탑승지별 명단)을 <b>함께</b> 선택하면 좌석표와 픽업 장소가 자동으로 채워져요. 호차가 여러 대면 위 탭에서 <b>+ 호차 추가</b> 후, 호차마다 파일을 따로 선택하세요.</p>
+          <div id="xl-bus-inputs"></div>
+          <div class="modal-status" id="xl-import-status" style="margin-top:8px; line-height:1.6;"></div>
+        </div>
+
+        <div class="card">
+          <div class="headline-inputs" style="margin:0;">
+            <input type="text" id="mountain" placeholder="산 이름 / 행사명">
+            <input type="date" id="ev-date">
+            <input type="text" id="club" placeholder="산악회 이름">
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>픽업 장소</h2>
+          <div class="field" style="margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--line);">
+            <label>📍 탑승지 엑셀 불러오기 (밴드에서 탑승지 엑셀 파일 1개)</label>
+            <input type="file" id="pickup-import-input" data-status="pickup-import-status" accept=".xlsx,.xls">
+            <div class="modal-status" id="pickup-import-status" style="margin-top:8px; line-height:1.6;"></div>
+          </div>
+          <div id="loc-list"></div>
+          <button class="add-row" onclick="addLocation()">+ 픽업 장소 추가</button>
+          <p class="footnote">장소마다 색이 다르게 들어가고, 좌석 배정 줄과 좌석표에 같은 색으로 표시돼요. 색 칸을 눌러 바꿀 수 있어요.</p>
+        </div>
+
+        <div class="card auto-card">
+          <h2>좌석 배정(자동 입력)</h2>
+          <div class="field" style="margin-bottom:12px;">
+            <label>버스 종류</label>
+            <select id="bus-type">
+              <option value="standard">일반 버스 (좌석 수·줄당 좌석 수 직접 입력)</option>
+              <option value="county20">카운티 중형 20석 (승객 19석 + 운전석)</option>
+              <option value="bus45">일반 버스 45승 (2+2 배치 · 맨 뒤 5석)</option>
+              <option value="premium20">20인승 프리미엄 (20석 · 2+1 배치)</option>
+              <option value="solati15">솔라티 15인승 (15석 · 승합 배치)</option>
+            </select>
+          </div>
+          <div class="send-actions" style="margin:0 0 10px;"><button class="send-btn" id="seat-bulk-toggle" type="button">✏️ 좌석 배정 한꺼번에 입력</button></div>
+          <div id="seat-bulk" style="display:none; margin-bottom:14px;">
+            <textarea id="seat-bulk-text" rows="9" placeholder="한 줄에 한 좌석: 번호 이름&#10;예)&#10;1 대장&#10;3 이정연&#10;5 송해인&#10;6 -&#10;&#10;번호 없이 이름만 쓰면 앞에서부터 순서대로 들어가고, 빈 좌석은 번호만 쓰거나 - 를 써요. 쉼표로 이어서 써도 돼요."></textarea>
+            <div class="send-actions">
+              <button class="send-btn" id="seat-bulk-load" type="button">현재 배정 불러오기</button>
+              <button class="send-btn primary" id="seat-bulk-apply" type="button">좌석에 적용</button>
+            </div>
+            <div class="modal-status" id="seat-bulk-status" style="line-height:1.6;"></div>
+          </div>
+          <div class="grid2" style="margin-bottom:12px;">
+            <div class="field"><label>총 좌석 수</label><input type="text" id="seat-total" value="28"></div>
+            <div class="field"><label>줄당 좌석 수</label><input type="text" id="seat-per-row" value="3"></div>
+          </div>
+          <div id="seat-list"></div>
+        </div>
+
+        <div class="card">
+          <h2>버스 정보</h2>
+          <div class="grid2">
+            <div class="field"><label>차량번호</label><input type="text" id="bus-plate" value="경기78아6800"></div>
+            <div class="field"><label>기사님</label><input type="text" id="bus-driver" value="김재호"></div>
+            <div class="field"><label>연락처</label><input type="text" id="bus-phone" value="010-6655-5329"></div>
+            <div class="field"><label>충전케이블</label><input type="text" id="bus-cable" value="USB타입"></div>
+          </div>
+          <div class="field" style="margin-top:10px;"><label>버스 사진 (선택)</label><input type="file" id="bus-photo-input" accept="image/*"></div>
+          <div class="field" style="margin-top:10px;"><label>비고 (좌석표 아래에 표시돼요)</label><textarea id="bus-note" rows="3" placeholder="예: 하산 후 식사 장소 이동, 준비물 안내 등"></textarea></div>
+        </div>
+
+        <div class="card">
+          <h2>자차 · 차량지원 정보</h2>
+          <div id="car-list"></div>
+          <button class="add-row" onclick="addCar()">+ 자차 추가</button>
+          <p class="footnote">엑셀의 차량지원 · 자차 탑승자는 불러올 때 자동으로 들어와요. 입력한 내용은 좌석표 아래에 표로 나와요.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="overflow-x:auto;">
+          <div class="sheet" id="live-seat-sheet" style="width:auto; padding:0;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-ledger">
+    <div class="bus-tabs" id="ledger-tabs"></div>
+    <div id="ledger-bus-view">
+    <div class="card">
+      <h2><span class="tag income">수입</span> 회비 입금</h2>
+      <div class="grid2">
+        <div class="field"><label>1인당 회비</label><input class="num-in money" type="text" inputmode="numeric" id="unit-price" value="36000"></div>
+        <div class="field"><label>인원 수</label><input class="num-in" type="number" id="head-count" value="35"></div>
+      </div>
+      <div class="field" style="margin-top:10px;"><label>비고</label><input type="text" id="income-note" value="제외 : 리딩 안혜숙 리더"></div>
+      <div class="subtotal-line">수입 합계 <b id="income-total">0원</b></div>
+    </div>
+    <div class="card">
+      <h2><span class="tag expense">지출</span> 전액 환불</h2>
+      <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">환불액</th><th></th></tr></thead><tbody id="full-refund-body"></tbody></table>
+      <button class="add-row" onclick="addRefundRow('full')">+ 전액 환불 추가</button>
+      <div class="subtotal-line">전액 환불 합계 <b id="full-refund-total">0원</b></div>
+    </div>
+    <div class="card">
+      <h2><span class="tag expense">지출</span> 50% 환불</h2>
+      <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">원 금액</th><th></th></tr></thead><tbody id="half-refund-body"></tbody></table>
+      <button class="add-row" onclick="addRefundRow('half')">+ 50% 환불 추가</button>
+      <div class="subtotal-line">50% 환불 합계 (원 금액의 절반) <b id="half-refund-total">0원</b></div>
+    </div>
+    <div class="card">
+      <h2>환불 불가</h2>
+      <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">금액</th><th></th></tr></thead><tbody id="no-refund-body"></tbody></table>
+      <button class="add-row" onclick="addNoRefundRow()">+ 이름 추가</button>
+      <div class="subtotal-line"><span>환불 불가 합계 (<span id="no-refund-count">0</span>명)</span><b id="no-refund-total">0원</b></div>
+      <p class="footnote">환불해 주지 않는 금액을 기록하는 칸이에요. 이미 수입에 들어 있는 돈이라 지출 합계에는 넣지 않아요.</p>
+    </div>
+    <div class="card">
+      <h2><span class="tag expense">지출</span> 버스비</h2>
+      <div class="field"><label>버스비 금액</label><input class="num-in money" type="text" inputmode="numeric" id="bus-fee" value="900000"></div>
+    </div>
+    <div class="card">
+      <h2>🧾 영수증 첨부 <span class="tag expense">버스비</span></h2>
+      <input type="file" id="receipt-input-bus" accept="image/*" multiple>
+      <div class="rc-list" id="receipt-list-bus"></div>
+      <div class="modal-status" id="receipt-status-bus"></div>
+      <p class="footnote">송금 내역·영수증 사진을 올리면 정산내역 이미지 오른쪽에 같이 들어가요. 사진은 용량을 줄여서 저장하고, 최대 6장까지 올릴 수 있어요.</p>
+    </div>
+    <div class="summary" id="summary-box" style="margin-top:6px;"></div>
+    </div>
+
+    <div id="ledger-car-view" style="display:none;">
+    <div class="card" id="car-ledger-card">
+      <h2 id="cl-heading">🚗 자차 정산내역</h2>
+      <div class="grid2">
+        <div class="field"><label>1인당 회비</label><input class="num-in money" type="text" inputmode="numeric" id="cl-unit"></div>
+        <div class="field"><label>인원 수</label><input class="num-in" type="number" id="cl-count"></div>
+      </div>
+      <div class="field" style="margin-top:10px;"><label>탑승자 명단 (쉼표로 구분 · 입력하면 인원 수가 자동으로 맞춰져요)</label><input type="text" id="cl-riders" placeholder="예: 김형환72, 장영희73, 엄경희75"></div>
+      <button class="add-row" onclick="loadCarRiders()">↓ 좌석표의 '자차 정보'에서 불러오기</button>
+      <div class="modal-status" id="cl-status"></div>
+      <div class="sub-h">지출 (차량지원비)</div>
+      <div id="cl-expense-list"></div>
+      <button class="add-row" onclick="addCarExpense()">+ 차량지원비 추가</button>
+      <div class="field" style="margin-top:12px;"><label>합계 항목 이름</label><input type="text" id="cl-label" placeholder="비워 두면 '산이름 식대 정산시 사용'"></div>
+      <div class="subtotal-line"><span>수입</span><b id="cl-income">0원</b></div>
+      <div class="subtotal-line"><span>지출</span><b id="cl-expense">0원</b></div>
+      <div class="subtotal-line"><span>합계</span><b id="cl-balance">0원</b></div>
+      <div class="sub-h">🧾 영수증 첨부</div>
+      <input type="file" id="receipt-input-car" accept="image/*" multiple>
+      <div class="rc-list" id="receipt-list-car"></div>
+      <div class="modal-status" id="receipt-status-car"></div>
+      <p class="footnote">탭 이름을 더블클릭하면 이름을 바꿀 수 있어요. 자차 탭마다 정산내역 이미지가 따로 만들어져요.</p>
+    </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-dutch">
+    <div class="card">
+      <h2>🍻 인원 · 총금액</h2>
+      <div class="grid3">
+        <div class="field"><label>식대 총인원(명)</label><input class="num-in" type="number" inputmode="numeric" id="dp-head"></div>
+        <div class="field"><label>비주류 인원(명)</label><input class="num-in" type="number" inputmode="numeric" id="dp-non"><div class="field-hint" id="dp-non-hint"></div></div>
+        <div class="field"><label>주류 인원(명)</label><div class="dp-auto" id="dp-drk">0</div></div>
+      </div>
+      <div class="non-box" style="margin-top:12px;">
+        <label>🥤 비주류 (술 안 마시는 분) 이름 입력 · <span id="nd-count">0</span>명</label>
+        <div class="non-input-row">
+          <input type="text" id="nd-input" list="nd-names" autocomplete="off" placeholder="이름 입력 후 Enter (예: 이연옥76 · 쉼표로 여러 명)">
+          <button class="sort-btn" id="nd-add" type="button">추가</button>
+        </div>
+        <datalist id="nd-names"></datalist>
+        <div class="nd-chips" id="nd-chips"></div>
+        <div class="modal-status" id="nd-status"></div>
+        <p class="footnote" style="margin-bottom:0;">이름을 입력하면 위의 <b>비주류 인원</b>이 이름 수로 자동 계산돼요. 입력한 분은 개인별 식대 정산(자동) 표에 비주류로 표시돼요. 이름만 쓰면(출생연도 없이) 명단에서 같은 이름을 찾고, 명단에 없으면 새로 추가해요.</p>
+        <div style="border-top:1px dashed var(--line); margin:14px 0 12px;"></div>
+        <label>🍽️ 식대 전체 제외 이름 입력 · <span id="nf-count">0</span>명</label>
+        <div class="non-input-row">
+          <input type="text" id="nf-input" list="nd-names" autocomplete="off" placeholder="식대를 안 내는 분 이름 후 Enter (예: 이상현 · 쉼표로 여러 명)">
+          <button class="sort-btn" id="nf-add" type="button">추가</button>
+        </div>
+        <div class="nd-chips" id="nf-chips"></div>
+        <div class="modal-status" id="nf-status"></div>
+        <p class="footnote" style="margin-bottom:0;">여기에 넣은 분은 <b>식대 · 주류 · 음료수 모두 빠져요</b> (예: 회비를 안 내는 분). 식대 총인원과 비주류·주류 인원 수에는 그대로 포함해 두면, 그 수에서 빼고 나머지 분들이 나눠요. 개인별 식대 정산(자동) 표의 "전체 제외" 체크로도 바꿀 수 있어요.</p>
+      </div>
+      <div class="field" style="margin-top:10px;"><label>총금액</label><input class="num-in money" type="text" inputmode="numeric" id="dp-total"></div>
+      <div class="field" style="margin-top:10px;"><label>비고 (총금액 설명 · 더치페이 이미지와 보내는 문구에 같이 나와요)</label><textarea id="dp-total-note" rows="2" placeholder="예: 식당 카드결제 합계 · 영수증 참고"></textarea></div>
+      <p class="footnote">비주류는 술을 안 마시는 분이에요. <b>비주류 이름을 입력하면 비주류 인원이 이름 수로 자동 계산</b>되고(이름이 없으면 직접 입력), 주류 인원은 식대 총인원에서 비주류를 뺀 값으로 자동 계산돼요.</p>
+    </div>
+    <div class="card">
+      <h2>🍽️ 식대 <span class="tag expense">먹은 분끼리</span></h2>
+      <div id="dp-menu-list"></div>
+      <button class="add-row" onclick="addDutchItem('menus')">+ 메뉴 추가</button>
+      <div class="subtotal-line"><span>식대 계</span><b id="dp-menu-sum">0원</b></div>
+      <p class="footnote">금액을 비워 두면 <b>총금액 − 주류 − 음료수</b>로 자동 계산돼요. 메뉴를 추가하고 금액을 적으면, 비워 둔 메뉴가 나머지 금액을 가져가요.<br>먹은 인원 칸을 비우면 <b>전원</b>이 먹은 걸로 계산해요. 한 메뉴에 먹은 비주류·주류 인원을 적으면 그 메뉴는 먹은 분끼리만 나누고, <b>인원을 비워 둔 메뉴는 그 인원을 뺀 나머지가 자동으로 들어가요</b> (예: 메뉴 2에 3명을 적으면 메뉴 1은 총인원에서 3명 제외).</p>
+    </div>
+    <div class="card">
+      <h2>🍶 주류</h2>
+      <div id="dp-alc-list"></div>
+      <button class="add-row" onclick="addDutchItem('alcohol')">+ 주류 추가</button>
+      <div class="subtotal-line"><span>주류 계</span><b id="dp-alc-sum">0원</b></div>
+    </div>
+    <div class="card">
+      <h2>🥤 음료수 <span class="tag income">비주류</span></h2>
+      <div id="dp-drk-list"></div>
+      <button class="add-row" onclick="addDutchItem('drinks')">+ 음료수 추가</button>
+      <div class="subtotal-line"><span>음료수 계</span><b id="dp-drk-sum">0원</b></div>
+    </div>
+    <div class="card">
+      <h2>💰 금액 정리</h2>
+      <div class="subtotal-line"><span>총금액</span><b id="dp-r-total">0원</b></div>
+      <div class="subtotal-line"><span>식대 (총금액 − 주류 − 음료수)</span><b id="dp-r-food">0원</b></div>
+      <div class="subtotal-line"><span>주류 계</span><b id="dp-r-alc">0원</b></div>
+      <div class="subtotal-line"><span>음료수 계</span><b id="dp-r-drink">0원</b></div>
+    </div>
+    <div class="card">
+      <h2>🧮 1인당 금액</h2>
+      <table>
+        <thead><tr><th></th><th style="text-align:right;">비주류</th><th style="text-align:right;">주류</th></tr></thead>
+        <tbody id="dp-result-body"></tbody>
+      </table>
+      <div class="subtotal-line"><span>두 총계의 합</span><b id="dp-r-sum">0원</b></div>
+      <div class="modal-status" id="dp-warn" style="color:var(--danger);"></div>
+      
+      <p class="footnote">식대는 메뉴마다 먹은 분끼리(먹은 인원을 비우면 전원), 주류는 마신 분끼리, 음료수는 비주류끼리 나눠요. 여러 메뉴를 먹은 분은 메뉴별 식대를 더하고 음료수·주류는 한 번만 더해요. 1인당 금액은 반올림해서 보여주고, 총계는 소수점까지 계산한 값이에요.</p>
+    </div>
+    <div class="card" id="dp-send-card">
+      <h2>📤 더치페이 보내기</h2>
+      <div class="field" style="margin-top:0;"><label>계좌번호 (은행 · 계좌번호 · 예금주)</label><input type="text" id="dp-account" inputmode="text" autocomplete="off" placeholder="예: 00은행 000-0000-0000-00 (예금주)"></div>
+      <div class="field" style="margin-top:10px;"><label>비고 (보내는 문구와 더치페이 이미지에 같이 나와요)</label><textarea id="dp-note" rows="2" placeholder="예: 식대 정산 후 남는 금액은 운영자금으로 귀속"></textarea></div>
+      <div style="height:12px;"></div>
+      <label class="chk"><input type="checkbox" id="dp-send-people"> 개인별 금액도 함께 보내기 (이름 · 금액)</label>
+      <textarea id="dp-msg" rows="11" style="line-height:1.6;"></textarea>
+      <div class="send-actions">
+        <button class="send-btn primary" id="dp-send-copy" type="button">📋 복사하기</button>
+        <button class="send-btn" id="dp-send-share" type="button" style="display:none;">📤 공유하기</button>
+        <button class="send-btn" id="dp-send-sms" type="button">💬 문자로 보내기</button>
+        <button class="send-btn" id="dp-send-reset" type="button">↺ 다시 만들기</button>
+      </div>
+      <div class="modal-status" id="dp-send-status"></div>
+      <p class="footnote">문구는 더치페이 금액, 계좌번호, 비고로 자동으로 만들어지고 직접 고칠 수도 있어요. <b>복사하기</b>를 누른 뒤 카카오톡·문자 대화창에 붙여 넣어 보내세요. 정산 표 이미지는 위의 "화면과 같이 JPG로 보기"에서 공유할 수 있어요.</p>
+    </div>
+    <div class="card">
+      <h2>🧾 영수증 첨부 <span class="tag expense">더치페이</span></h2>
+      <input type="file" id="receipt-input-dutch" accept="image/*" multiple>
+      <div class="rc-list" id="receipt-list-dutch"></div>
+      <div class="modal-status" id="receipt-status-dutch"></div>
+      <p class="footnote">식당 영수증·결제 내역 사진을 올리면 더치페이 이미지 오른쪽에 같이 들어가요. 사진은 용량을 줄여서 저장하고, 최대 6장까지 올릴 수 있어요.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-lodge">
+    <div class="card">
+      <h2>🏨 숙소 정보</h2>
+      <div class="field"><label>숙소 이름</label><input type="text" id="lg-name" placeholder="예: ○○펜션 · 민박"></div>
+      <div class="grid2" style="margin-top:10px;">
+        <div class="field"><label>체크인</label><input type="date" id="lg-in"></div>
+        <div class="field"><label>체크아웃</label><input type="date" id="lg-out"></div>
+      </div>
+      <div class="field" style="margin-top:10px;"><label>연락처 · 주소 (선택)</label><input type="text" id="lg-contact" placeholder="예: 010-0000-0000 · 전남 여수시 …"></div>
+      <div class="modal-status" id="lg-nights"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="tag expense">지출</span> 방 배정 · 숙박비</h2>
+      <div id="lg-room-list"></div>
+      <button class="add-row" onclick="addLodgeRoom()">+ 방 추가</button>
+      <p class="footnote">방마다 방 금액과 묵는 분 이름(쉼표로 구분)을 입력하면 그 방 금액을 묵는 분끼리 나눠요 (1인 = 방 금액 ÷ 인원). 이름은 개인별 정산 명단과 같은 형식(이름+출생연도)으로 쓰면 서로 연결돼요.</p>
+    </div>
+
+    <div class="card">
+      <h2>개인별 숙박비</h2>
+      <table>
+        <thead><tr><th class="name-cell">이름</th><th>방</th><th style="text-align:right;">숙박비</th></tr></thead>
+        <tbody id="lg-people-body"></tbody>
+      </table>
+      <div class="modal-status" id="lg-warn" style="line-height:1.6;"></div>
+    </div>
+
+    <div class="summary" id="lg-summary"></div>
+
+    <div class="card">
+      <h2>비고 · 영수증</h2>
+      <div class="field"><label>비고 (숙박 정산 이미지에 같이 나와요)</label><textarea id="lg-note" rows="2" placeholder="예: 입실 15시 · 퇴실 11시 · 바비큐 이용료 별도"></textarea></div>
+      <div class="sub-h">🧾 영수증 첨부</div>
+      <input type="file" id="receipt-input-lodge" accept="image/*" multiple>
+      <div class="rc-list" id="receipt-list-lodge"></div>
+      <div class="modal-status" id="receipt-status-lodge"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-settle">
+    <div class="card">
+      <h2>📊 숙박 정산표</h2>
+      <p class="footnote" style="margin-top:0;">행사 전체 비용을 항목별로 나눠서 한 장의 표로 만들어요. 항목마다 총금액 · 제외할 분 · 고정금액을 정하면 1인당 금액과 <b>입금해야할 금액</b>이 자동 계산돼요.</p>
+      <div class="field"><label>표 제목 (비우면 '산이름 정산내역')</label><input type="text" id="st-title" placeholder="예: 왕피천 정산내역"></div>
+      <div class="send-actions"><button class="send-btn" id="st-sample" type="button">예시로 채워 보기</button></div>
+      <div class="modal-status" id="st-sample-status"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="tag expense">지출</span> 정산 항목</h2>
+      <div id="st-items"></div>
+      <button class="add-row" onclick="addSettleItem()">+ 항목 추가</button>
+      <p class="footnote"><b>제외</b>: 이 항목을 내지 않는 분의 이름이나 태그(예: 자차)를 쉼표로 적어요. <b>고정금액</b>: <code>자차=20000, 이름=15000</code>처럼 적으면 그 금액을 빼고 나머지를 나눠요. <b>묶음</b>이 같은 항목은 표에서 한 칸으로 묶여요 (예: 8/15일(토)). <b>선납 항목</b>은 미리 받은 돈이라 입금해야할 금액에서 빼요.</p>
+    </div>
+
+    <div class="card">
+      <h2>👥 참가자</h2>
+      <div class="send-actions" style="margin:0 0 10px;"><button class="send-btn" id="st-from-people" type="button">개인별 명단에서 불러오기</button></div>
+      <textarea id="st-paste" rows="2" placeholder="이름을 한꺼번에 붙여넣기 (줄바꿈 또는 쉼표로 구분)"></textarea>
+      <div class="send-actions" style="margin:6px 0 12px;"><button class="send-btn" id="st-paste-add" type="button">붙여넣은 이름 추가</button></div>
+      <div id="st-people"></div>
+      <button class="add-row" onclick="addSettlePerson()">+ 참가자 추가</button>
+      <p class="footnote"><b>태그</b>(예: 자차)를 넣으면 같은 태그가 연달아 있을 때 표에서 안 내는 칸이 한 칸으로 묶여요. <b>선납금</b>은 비우면 선납 항목 합계로 자동 계산돼요 (미리 안 낸 분은 0을 입력).</p>
+    </div>
+
+    <div class="card">
+      <h2>정산표</h2>
+      <div class="st-wrap" style="overflow-x:auto;"><div id="st-table"></div></div>
+      <div class="modal-status" id="st-warn" style="line-height:1.6;"></div>
+    </div>
+
+    <div class="summary" id="st-summary"></div>
+
+    <div class="card">
+      <h2>비고</h2>
+      <div class="field"><label>비고 (정산표 이미지 아래에 나와요)</label><textarea id="st-note" rows="2" placeholder="예: 입금 계좌 · 입금 기한"></textarea></div>
+    </div>
+  </section>
+
+
+
+  <section class="panel" id="panel-people">
+    <div class="card">
+      <h2>개인별 정산</h2>
+      <label class="chk" style="margin-bottom:6px;"><input type="checkbox" id="auto-dutch"> 🍻 더치페이 금액으로 식대·주류·비주류 자동 입력</label>
+      <div class="modal-status" id="auto-note" style="margin:0 0 12px; line-height:1.6;"></div>
+      <div class="sort-bar">
+        <span>정렬</span>
+        <button class="sort-btn" id="sort-name" onclick="sortPeople('name')">이름순</button>
+        <button class="sort-btn" id="sort-seat" onclick="sortPeople('seat')">좌석순</button>
+      </div>
+      <p class="footnote" style="margin:0 0 14px;">🥤 비주류(술 안 마시는 분) <b>이름은 당일 더치페이(1/N) 탭 → 인원 · 총금액</b>에서 입력해요. 현재 <b id="nd-count-people">0</b>명이에요. 아래 표의 체크 칸으로도 바꿀 수 있어요.
+        <button class="sort-btn" type="button" style="margin-left:6px;" onclick="document.querySelector('.tab-btn[data-tab=dutch]').click()">당일 더치페이(1/N) 탭으로 →</button></p>
+      <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th class="name-cell">이름</th><th>좌석</th><th style="text-align:center; white-space:nowrap; padding-left:6px; padding-right:6px;" title="술을 안 마시는 분">비주류<br>체크</th><th style="text-align:center; white-space:nowrap; padding-left:6px; padding-right:6px;" title="식대를 전혀 안 내는 분 (음료수·주류만 부담)">식대<br>제외</th><th>식대</th><th style="text-align:right;">주류</th><th style="text-align:right;">비주류</th><th style="text-align:right;">합계</th><th>비고</th><th></th></tr></thead>
+        <tbody id="people-body"></tbody>
+      </table>
+      </div>
+      <button class="add-row" onclick="addPerson()">+ 이름 추가</button>
+      <div class="subtotal-line">전체 합계 <b id="people-total">0원</b></div>
+      <div class="field" style="margin-top:14px;"><label>비고 (개인별 정산 이미지에 같이 나와요)</label><textarea id="pp-note" rows="2" placeholder="예: 식대 정산 후 남는 금액은 운영자금으로 귀속"></textarea></div>
+    </div>
+    <div class="card">
+      <h2>🧾 영수증 <span class="tag expense">더치페이</span></h2>
+      <div class="rc-list big" id="receipt-view-people"></div>
+      <div class="modal-status" id="receipt-view-status"></div>
+      <button class="add-row" onclick="document.querySelector('.tab-btn[data-tab=dutch]').click()">당일 더치페이(1/N) 탭에서 영수증 올리기 · 지우기 →</button>
+      <p class="footnote">당일 더치페이(1/N) 탭에 첨부한 영수증이 그대로 보여요. 개인별 정산 이미지 오른쪽에도 같이 들어가요.</p>
+    </div>
+  </section>
+
+</div>
+
+<div id="export-host">
+  <div class="sheet" id="export-sheet"></div>
+</div>
+
+<div class="modal-backdrop" id="dlg-modal">
+  <div class="modal-box" style="max-width:380px;">
+    <div id="dlg-msg" style="font-size:14.5px; line-height:1.6; margin-bottom:12px;"></div>
+    <input type="text" id="dlg-input" style="display:none; margin-bottom:12px;">
+    <div class="modal-actions">
+      <button id="dlg-cancel">취소</button>
+      <button class="primary" id="dlg-ok">확인</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="jpg-modal">
+  <div class="modal-box">
+    <img id="jpg-preview" alt="이미지 미리보기">
+    <div class="modal-status" id="jpg-status">이미지를 만드는 중...</div>
+    <div class="modal-actions">
+      <button onclick="closeJpg()">닫기</button>
+      <button id="jpg-share-btn" onclick="shareJpg()" style="display:none;">📤 공유</button>
+      <button class="primary" id="jpg-save-btn" onclick="saveJpg()">JPG로 저장</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const KRW = n => (Math.round(n||0)).toLocaleString('ko-KR') + '원';
+const num = v => { const n = parseFloat(String(v==null ? '' : v).replace(/,/g,'')); return isNaN(n) ? 0 : n; };
+/* 금액 입력칸(.money): 숫자만 받고 천 단위 쉼표를 자동으로 넣어요 */
+function fmtMoney(v){
+  let d = String(v==null ? '' : v).replace(/[^\d]/g,'').replace(/^0+(?=\d)/,'');
+  return d.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function refreshMoney(root){
+  (root||document).querySelectorAll('input.money').forEach(el=>{ const f = fmtMoney(el.value); if(f !== el.value) el.value = f; });
+}
+document.addEventListener('input', e=>{
+  const el = e.target;
+  if(!el || !el.classList || !el.classList.contains('money')) return;
+  const before = el.value, pos = el.selectionStart == null ? before.length : el.selectionStart;
+  const digitsBefore = before.slice(0,pos).replace(/[^\d]/g,'').length;
+  const f = fmtMoney(before);
+  if(f !== before){
+    el.value = f;
+    let n = 0, np = 0;
+    while(np < f.length && n < digitsBefore){ if(/\d/.test(f[np])) n++; np++; }
+    try{ el.setSelectionRange(np,np); }catch(_){}
+  }
+}, true);
+/* 칸을 누를 때 값이 0이면 전체 선택 → 바로 덮어써서 입력할 수 있어요 */
+document.addEventListener('focusin', e=>{ const el = e.target; if(el && el.classList && el.classList.contains('money') && el.value === '0') setTimeout(()=>{ try{ el.select(); }catch(_){} }, 0); });
+new MutationObserver(muts=>{
+  muts.forEach(m=>m.addedNodes.forEach(n=>{
+    if(n.nodeType !== 1) return;
+    if(n.matches && n.matches('input.money')) refreshMoney(n.parentNode); else refreshMoney(n);
+  }));
+}).observe(document.documentElement, { childList:true, subtree:true });
+const STORE_KEY = 'bus-trip-tool-v3';
+
+let state = {
+  seedId: 'xlsx-20260919',
+  busType: 'standard',
+  busList: [ { name:'1호차', data:null } ],
+  activeBus: 0,
+  cars: [],
+  receipts: { bus: [], dutch: [], lodge: [] },
+  settle: { title:'', note:'', items:[], people:[] },
+  lodge: { name:'', checkin:'', checkout:'', contact:'', rooms:[{ name:'', price:'', members:'' }], note:'' },
+  carLedgers: [],
+  activeLedger: -1,
+  autoDutch: true,
+  peopleNote: '',
+  dutch: { note:'', account:'', total:1018000, head:28, non:6, menus:[ {name:'메뉴명 1', amount:'', non:'', drk:''} ], alcohol:[ {name:'소주', amount:56000}, {name:'맥주', amount:85000} ], drinks:[ {name:'음료수', amount:40000} ] },
+  mountain: '화악산',
+  date: '2026-09-19',
+  club: '청마루 산악회',
+
+  unitPrice: 36000, headCount: 35, incomeNote: '제외 : 리딩 안혜숙 리더',
+  fullRefunds: [ { name:'황효영77(스타리아 운전)', amount:36000 } ],
+  halfRefunds: [],
+  noRefunds: ['이유리72','조미경72','우정주74','손기중74','배수근74'],
+  busFee: 900000,
+
+  dishes: [ { name:'누룽지두부찌개', price:22600 }, { name:'동태찌개', price:13000 } ],
+  people: [
+    { name:'심영기', dish:0, drink:1900, other:0 },
+    { name:'박서빈', dish:0, drink:1900, other:0 },
+    { name:'여정9', dish:1, drink:1900, other:0 },
+    { name:'김은영', dish:0, drink:1900, other:0 },
+    { name:'김기현', dish:1, drink:1900, other:0 },
+    { name:'서정원', dish:0, drink:1900, other:0 },
+    { name:'윤성희', dish:0, drink:1900, other:0 },
+    { name:'최윤정', dish:0, drink:1900, other:0 },
+    { name:'김 곤', dish:0, drink:1900, other:0 }
+  ],
+
+  bus: { plate:'경기78아6800', driver:'김재호', phone:'010-6655-5329', cable:'USB타입', photo:'' },
+  locations: [
+    {"name": "사당역", "exit": "11번 출구", "time": "AM 07시 00분", "color": "#92D14F"},
+    {"name": "잠실역", "exit": "5번 출구", "time": "AM 07시 25분", "color": "#FFC000"},
+    {"name": "노원역", "exit": "7번 출구", "time": "AM 08시 00분", "color": "#F2CFEF"}
+  ],
+  seatTotal: 28,
+  seatPerRow: 3,
+  seats: [
+    {"name": "유명규74", "loc": 2},
+    {"name": "이연옥76", "loc": 2},
+    {"name": "김병중74", "loc": 1},
+    {"name": "임경민77", "loc": 2},
+    {"name": "남은영76", "loc": 2},
+    {"name": "이종임72", "loc": 2},
+    {"name": "장현진71", "loc": 2},
+    {"name": "박서빈70", "loc": 1},
+    {"name": "정성이75", "loc": 1},
+    {"name": "심영아73", "loc": 1},
+    {"name": "정미자71", "loc": 2},
+    {"name": "박신숙73", "loc": 1},
+    {"name": "박선희72", "loc": 0},
+    {"name": "김제숙73", "loc": 2},
+    {"name": "조명기76", "loc": 2},
+    {"name": "이종원70", "loc": 2},
+    {"name": "정승용70", "loc": 1},
+    {"name": "김형환72", "loc": 0},
+    {"name": "최진희77", "loc": 1},
+    {"name": "한소정82", "loc": 2},
+    {"name": "주정훈72", "loc": 1},
+    {"name": "강원옥70", "loc": 2},
+    {"name": "임윤정77", "loc": 0},
+    {"name": "조철73", "loc": 1},
+    {"name": "지성준73", "loc": 1},
+    {"name": "윤송일73", "loc": 2},
+    {"name": "이정석73", "loc": 1},
+    {"name": "이혜린79", "loc": 1}
+  ]
+};
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      /* 새 엑셀 데이터(seedId)가 바뀌면 좌석·픽업·행사 정보는 새 값으로 교체 */
+      if(saved.seedId !== state.seedId){ ['mountain','date','club','locations','seatTotal','seatPerRow','seats','busList','activeBus','busType','stdBackup'].forEach(k=>delete saved[k]); }
+      state = Object.assign(state, saved);
+      /* 예전 버전(자차 정산이 1개 고정)에서 저장한 값은 첫 번째 자차 탭으로 옮겨요 */
+      if(!Array.isArray(saved.carLedgers)){
+        state.carLedgers = [];
+        const old = saved.carLedger, oldRc = (saved.receipts && saved.receipts.car) || [];
+        if(old && (old.enabled || (old.expenses && old.expenses.length) || String(old.riders||'').trim() || oldRc.length)){
+          state.carLedgers.push({ name:'자차 1', unitPrice:old.unitPrice, riders:old.riders||'', count:old.count, expenses:old.expenses||[], balanceLabel:old.balanceLabel||'', receipts:oldRc });
+        }
+      }
+      delete state.carLedger;
+      if(state.receipts) delete state.receipts.car;
+      if(!state.receipts) state.receipts = { bus: [] };
+      if(!Array.isArray(state.receipts.dutch)) state.receipts.dutch = [];
+      if(!(state.activeLedger >= -1 && state.activeLedger < state.carLedgers.length)) state.activeLedger = -1;
+    }
+  }catch(e){}
+}
+let storageFull = false;
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); storageFull = false; }
+  catch(e){
+    storageFull = true;
+    try{
+      const lite = JSON.parse(JSON.stringify(state));
+      lite.receipts = { bus:[], dutch:[] };
+      (lite.carLedgers||[]).forEach(c=>{ c.receipts = []; });
+      if(lite.bus) lite.bus.photo = '';
+      (lite.busList||[]).forEach(b=>{ if(b.data && b.data.bus) b.data.bus.photo = ''; });
+      localStorage.setItem(STORE_KEY, JSON.stringify(lite));
+    }catch(e2){}
+  }
+}
+/* 브라우저 기본 confirm/prompt는 게시된 페이지에서 막히므로 페이지 안의 확인창을 써요 */
+function openDialog(msg, opts){
+  opts = opts || {};
+  const hasInput = typeof opts.input === 'string';
+  return new Promise(resolve=>{
+    const m = document.getElementById('dlg-modal'), inp = document.getElementById('dlg-input');
+    const ok = document.getElementById('dlg-ok'), cancel = document.getElementById('dlg-cancel');
+    document.getElementById('dlg-msg').textContent = msg;
+    inp.style.display = hasInput ? 'block' : 'none';
+    if(hasInput) inp.value = opts.input;
+    ok.textContent = opts.okText || '확인';
+    m.classList.add('open');
+    if(hasInput) setTimeout(()=>{ inp.focus(); inp.select(); }, 0);
+    const done = v=>{ m.classList.remove('open'); ok.onclick = cancel.onclick = inp.onkeydown = null; resolve(v); };
+    ok.onclick = ()=>done(hasInput ? inp.value : true);
+    cancel.onclick = ()=>done(hasInput ? null : false);
+    inp.onkeydown = e=>{ if(e.key==='Enter') ok.onclick(); else if(e.key==='Escape') cancel.onclick(); };
+  });
+}
+/* 전체 초기화: 예시 데이터로 되돌리지 않고, 입력한 내용을 모두 지운 빈 상태로 만들어요 */
+function blankState(){
+  return {
+    seedId: state.seedId, busType:'standard', busList:[ { name:'1호차', data:null } ], activeBus:0, cars:[],
+    receipts:{ bus:[], dutch:[], lodge:[] }, settle:{ title:'', note:'', items:[], people:[] },
+    lodge:{ name:'', checkin:'', checkout:'', contact:'', rooms:[{ name:'', price:'', members:'' }], note:'' },
+    carLedgers:[], activeLedger:-1, autoDutch:true, peopleNote:'',
+    dutch:{ note:'', account:'', total:0, head:0, non:0, menus:[ {name:'메뉴명 1', amount:'', non:'', drk:''} ], alcohol:[], drinks:[] },
+    mountain:'', date:'', club:'', unitPrice:0, headCount:0, incomeNote:'', fullRefunds:[], halfRefunds:[], noRefunds:[], busFee:0,
+    dishes:[], people:[], bus:{ plate:'', driver:'', phone:'', cable:'', photo:'' }, locations:[],
+    seatTotal:28, seatPerRow:3, seats:[]
+  };
+}
+async function resetAll(){
+  if(!(await openDialog('좌석표·정산·더치페이·사진 등 입력한 모든 내용이 삭제돼요. 전체 초기화할까요?', { okText:'모두 삭제' }))) return;
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(blankState())); }
+  catch(e){ try{ localStorage.removeItem(STORE_KEY); }catch(e2){} }
+  location.reload();
+}
+
+function activeTab(){ return document.querySelector('.tab-btn.active').dataset.tab; }
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='people') renderPeople();
+    if(btn.dataset.tab==='lodge') updateLodge();
+  });
+});
+
+function renderRefundRows(kind){
+  const body = document.getElementById(kind==='full' ? 'full-refund-body' : 'half-refund-body');
+  const list = kind==='full' ? state.fullRefunds : state.halfRefunds;
+  body.innerHTML = '';
+  list.forEach((row,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="name-cell"><input type="text" value="${row.name}" data-kind="${kind}" data-i="${i}" data-f="name"></td>
+      <td class="amt-cell"><input class="num-in money" type="text" inputmode="numeric" value="${row.amount}" data-kind="${kind}" data-i="${i}" data-f="amount"></td>
+      <td><button class="icon-btn" onclick="removeRow('${kind}',${i})" aria-label="삭제">×</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const {kind:k,i,f} = e.target.dataset;
+      const arr = k==='full' ? state.fullRefunds : state.halfRefunds;
+      arr[i][f] = f==='amount' ? num(e.target.value) : e.target.value;
+      recalcLedger();
+    });
+  });
+}
+function addRefundRow(kind){ (kind==='full' ? state.fullRefunds : state.halfRefunds).push({name:'', amount:0}); renderRefundRows(kind); recalcLedger(); }
+function removeRow(kind,i){ (kind==='full' ? state.fullRefunds : state.halfRefunds).splice(i,1); renderRefundRows(kind); recalcLedger(); }
+
+/* 환불 불가: 예전 저장값(이름만 있는 문자열)은 {name, amount} 로 바꿔요. 금액 기본값은 1인당 회비 */
+function normNoRefunds(){
+  state.noRefunds = (state.noRefunds||[]).map(r=> (typeof r==='string') ? { name:r, amount:num(state.unitPrice) } : r);
+}
+function updateNoRefundTotal(){
+  const list = state.noRefunds.filter(r=>r.name || num(r.amount));
+  document.getElementById('no-refund-count').textContent = list.length;
+  document.getElementById('no-refund-total').textContent = KRW(state.noRefunds.reduce((s,r)=>s+num(r.amount),0));
+}
+function renderNoRefund(){
+  const body = document.getElementById('no-refund-body');
+  body.innerHTML = '';
+  state.noRefunds.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="name-cell"><input type="text" value="${escapeHtml(r.name||'')}" data-i="${i}" data-f="name"></td>
+      <td class="amt-cell"><input class="num-in money" type="text" inputmode="numeric" value="${r.amount==null?'':r.amount}" data-i="${i}" data-f="amount"></td>
+      <td><button class="icon-btn" onclick="removeNoRefund(${i})" aria-label="삭제">×</button></td>`;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const {i,f} = e.target.dataset;
+      state.noRefunds[i][f] = f==='amount' ? num(e.target.value) : e.target.value;
+      updateNoRefundTotal(); saveState();
+    });
+  });
+  updateNoRefundTotal();
+}
+function addNoRefundRow(){ state.noRefunds.push({ name:'', amount:num(state.unitPrice) }); renderNoRefund(); saveState(); }
+function removeNoRefund(i){ state.noRefunds.splice(i,1); renderNoRefund(); saveState(); }
+
+function recalcLedger(){
+  const incomeTotal = num(document.getElementById('unit-price').value) * num(document.getElementById('head-count').value);
+  document.getElementById('income-total').textContent = KRW(incomeTotal);
+  const fullTotal = state.fullRefunds.reduce((s,r)=>s+num(r.amount),0);
+  document.getElementById('full-refund-total').textContent = KRW(fullTotal);
+  const halfTotal = state.halfRefunds.reduce((s,r)=>s+num(r.amount)*0.5,0);
+  document.getElementById('half-refund-total').textContent = KRW(halfTotal);
+  const busFee = num(document.getElementById('bus-fee').value);
+  const expenseTotal = fullTotal + halfTotal + busFee;
+  const balance = incomeTotal - expenseTotal;
+  document.getElementById('summary-box').innerHTML = `
+    <div class="summary-row inc"><span>수입 합계</span><span class="v">${KRW(incomeTotal)}</span></div>
+    <div class="summary-row exp"><span>지출 합계</span><span class="v">${KRW(expenseTotal)}</span></div>
+    <div class="summary-row total"><span>합계 / 운영자금 귀속</span><span class="v">${KRW(balance)}</span></div>
+  `;
+  state.unitPrice = num(document.getElementById('unit-price').value);
+  state.headCount = num(document.getElementById('head-count').value);
+  state.incomeNote = document.getElementById('income-note').value;
+  state.busFee = busFee;
+  saveState();
+}
+
+/* 좌석표(모든 호차)에서 이름으로 좌석·픽업 장소 색을 찾아요 */
+function buildSeatLookup(){
+  const map = new Map(); const multi = state.busList.length>1;
+  state.busList.forEach((b,bi)=>{
+    const d = bi===state.activeBus ? { seats:state.seats, locations:state.locations } : b.data;
+    if(!d) return;
+    d.seats.forEach((s,k)=>{
+      const key = normMember(s.name);
+      if(!key || map.has(key)) return;
+      const loc = (s.loc>=0 && d.locations[s.loc]) ? d.locations[s.loc] : null;
+      map.set(key, { label:(multi ? b.name+' ' : '') + (k+1) + '번', color: loc ? loc.color : '', order: bi*1000 + k });
+    });
+  });
+  state.cars.forEach(c=>{ const key = normMember(c.name); if(key && !map.has(key)) map.set(key, { label:c.kind||'자차', color:'', order:1e8 }); });
+  return map;
+}
+function seatTagHTML(name, lookup){
+  const i = (lookup||buildSeatLookup()).get(normMember(name));
+  if(!i) return '<span class="seat-none">-</span>';
+  return `<span class="seat-tag" style="background:${i.color ? i.color+'55' : 'transparent'}; border-color:${i.color||'var(--line)'};">${escapeHtml(i.label)}</span>`;
+}
+/* 정렬: 이름순(가나다) / 좌석순(호차 → 좌석 번호, 좌석 없는 분은 맨 뒤) */
+function sortPeople(mode){
+  const lookup = buildSeatLookup();
+  const seatKey = p => { const i = lookup.get(normMember(p.name)); return i ? i.order : 1e9; };
+  state.people.sort((a,b)=>{
+    if(mode==='seat'){ const d = seatKey(a) - seatKey(b); if(d) return d; }
+    const an = (a.name||'').trim(), bn = (b.name||'').trim();
+    if(!an && bn) return 1;
+    if(an && !bn) return -1;
+    return an.localeCompare(bn,'ko');
+  });
+  renderPeople(); saveState();
+  document.getElementById('sort-name').classList.toggle('active', mode==='name');
+  document.getElementById('sort-seat').classList.toggle('active', mode==='seat');
+}
+/* ===== 비주류(술 안 마시는 분) 이름 입력 ===== */
+function nameOnly(s){ return normMember(s).replace(/\d{2}$/,''); }
+function nonNames(){ return state.people.filter(p=>p.non && (p.name||'').trim()).map(p=>p.name.trim()); }
+function noFoodNames(){ return state.people.filter(p=>p.noFood && (p.name||'').trim()).map(p=>p.name.trim()); }
+const MARK = {
+  non:    { input:'nd-input', status:'nd-status', chips:'nd-chips', count:'nd-count', cls:'nd-chip',         label:'비주류',    after:()=>syncNonFromPeople() },
+  noFood: { input:'nf-input', status:'nf-status', chips:'nf-chips', count:'nf-count', cls:'nd-chip nf-chip', label:'전체 제외', after:()=>updateDutch() }
+};
+function addMarkName(raw, field){
+  const tok = String(raw||'').trim(); if(!tok) return null;
+  const key = normMember(tok); if(!key) return null;
+  const hasYear = /\d{2}$/.test(key);
+  const hit = state.people.filter(p=> hasYear ? normMember(p.name)===key : nameOnly(p.name)===key);
+  if(hit.length){ hit.forEach(p=>{ p[field] = true; }); return { kind:'mark', n:hit.length, name:tok }; }
+  const np = { name:key, dish:-1, drink:1900, other:0 }; np[field] = true;
+  state.people.push(np);
+  return { kind:'new', n:1, name:key };
+}
+function commitMarkInput(field){
+  const M = MARK[field], inp = document.getElementById(M.input);
+  const tokens = String(inp.value||'').split(/[,，、\n]/).map(s=>s.trim()).filter(Boolean);
+  if(!tokens.length) return;
+  const res = tokens.map(t=>addMarkName(t, field)).filter(Boolean);
+  inp.value = '';
+  const added = res.filter(r=>r.kind==='new').map(r=>r.name);
+  const multi = res.filter(r=>r.kind==='mark' && r.n>1).map(r=>r.name);
+  renderPeople(); saveState(); M.after();
+  let msg = `${res.length}명을 ${M.label}(으)로 표시했어요.`;
+  if(added.length) msg += ` 명단에 없어서 새로 추가한 분: ${added.join(', ')}.`;
+  if(multi.length) msg += ` 같은 이름이 여러 명이라 모두 표시했어요: ${multi.join(', ')} (출생연도를 같이 쓰면 한 명만 선택돼요).`;
+  document.getElementById(M.status).textContent = msg;
+  inp.focus();
+}
+function commitNonInput(){ commitMarkInput('non'); }
+function renderMarkChips(field){
+  const M = MARK[field], box = document.getElementById(M.chips); if(!box) return;
+  box.innerHTML = '';
+  state.people.forEach(p=>{
+    if(!p[field]) return;
+    const chip = document.createElement('span'); chip.className = M.cls;
+    chip.appendChild(document.createTextNode(p.name || '(이름 없음)'));
+    const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', `${p.name} ${M.label} 해제`);
+    x.addEventListener('click', ()=>{ p[field] = false; document.getElementById(M.status).textContent = ''; renderPeople(); saveState(); M.after(); });
+    chip.appendChild(x); box.appendChild(chip);
+  });
+  document.getElementById(M.count).textContent = state.people.filter(p=>p[field]).length;
+}
+function renderNonChips(){
+  renderMarkChips('non'); renderMarkChips('noFood');
+  const ndp = document.getElementById('nd-count-people'); if(ndp) ndp.textContent = state.people.filter(p=>p.non).length;
+  const dl = document.getElementById('nd-names');
+  if(dl){ dl.innerHTML = ''; const seen = new Set(); state.people.forEach(p=>{ if(p.name && !seen.has(p.name)){ seen.add(p.name); const o = document.createElement('option'); o.value = p.name; dl.appendChild(o); } }); }
+}
+/* 비주류 이름이 있으면 더치페이의 비주류 인원은 그 수로 자동 계산(잠금), 없으면 직접 입력 */
+function syncNonFromPeople(){
+  const n = state.people.filter(p=>p.non).length;
+  const inp = document.getElementById('dp-non'), hint = document.getElementById('dp-non-hint');
+  if(!inp) return;
+  const D = state.dutch;
+  if(n>0){
+    if(!D.nonAuto){ D.nonManual = D.non; D.nonAuto = true; }   /* 직접 입력해 둔 값은 기억해 둬요 */
+    D.non = n; inp.value = n; inp.readOnly = true; inp.classList.add('auto-lock');
+    if(hint) hint.textContent = '아래 비주류 이름 수로 자동 계산돼요.';
+  } else {
+    if(D.nonAuto){ D.non = D.nonManual; D.nonAuto = false; inp.value = D.non; }
+    inp.readOnly = false; inp.classList.remove('auto-lock'); if(hint) hint.textContent = '';
+  }
+  updateDutch();
+}
+function initNonBox(){
+  const ppn = document.getElementById('pp-note');
+  ppn.value = state.peopleNote || '';
+  ppn.addEventListener('input', e=>{ state.peopleNote = e.target.value; saveState(); });
+  const ad = document.getElementById('auto-dutch');
+  ad.checked = state.autoDutch !== false;
+  ad.addEventListener('change', ()=>{ state.autoDutch = ad.checked; renderPeople(); saveState(); });
+  document.getElementById('nd-add').addEventListener('click', commitNonInput);
+  document.getElementById('nd-input').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitNonInput(); } });
+  document.getElementById('nf-add').addEventListener('click', ()=>commitMarkInput('noFood'));
+  document.getElementById('nf-input').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commitMarkInput('noFood'); } });
+}
+/* ===== 더치페이 금액 자동 입력 =====
+   식대: 선택한 메뉴(또는 전체 메뉴)의 1인당 금액 · 주류: 주류 1인당(비주류 아닌 분) · 비주류: 음료수 1인당(비주류인 분) */
+/* 당일 더치페이(1/N) 탭에 첨부한 영수증을 개인별 정산에서도 보여줘요 */
+function renderPeopleReceipts(){
+  const box = document.getElementById('receipt-view-people'); if(!box) return;
+  box.innerHTML = '';
+  const list = Array.isArray(state.receipts.dutch) ? state.receipts.dutch : [];
+  list.forEach((src,i)=>{
+    const w = document.createElement('div'); w.className = 'rc-item';
+    const im = document.createElement('img'); im.src = src; im.alt = `영수증 ${i+1}`;
+    w.appendChild(im); box.appendChild(w);
+  });
+  document.getElementById('receipt-view-status').textContent = list.length ? `${list.length}장 · 개인별 정산 이미지 오른쪽에 들어가요.` : '당일 더치페이(1/N) 탭에 첨부한 영수증이 아직 없어요.';
+}
+/* 개인별 이미지의 비고 (사람별 비고 칸은 하나라도 적었을 때만 열로 나와요) */
+function ppNoteParts(){
+  const hasNote = state.people.some(p=>(p.note||'').trim());
+  const g = String(state.peopleNote||'').trim();
+  return {
+    hasNote,
+    th: hasNote ? '<th rowspan="2">비고</th>' : '',
+    td: p => hasNote ? `<td>${escapeHtml(p.note||'')}</td>` : '',
+    grandPad: hasNote ? '<td></td>' : '',
+    block: g ? `<div style="margin-top:10px; border:1px solid #333; padding:8px 10px; font-size:12px; line-height:1.6; white-space:pre-wrap;"><b>비고</b><br>${escapeHtml(g)}</div>` : ''
+  };
+}
+function autoAmounts(p, c){
+  const R = c.menu.rows;
+  const mi = (p.menu!=null && p.menu>=0 && R[p.menu]) ? p.menu : -1;
+  const food = mi>=0 ? R[mi].per : c.foodPer;
+  if(p.noFood) return { mi, food:0, alc:0, drink:0 };  /* 전체 제외: 식대·주류·음료수 모두 0원 */
+  return { mi, food: Math.round(food), alc: p.non ? 0 : Math.round(c.alcPer), drink: p.non ? Math.round(c.drinkPer) : 0 };
+}
+function personTotal(p, c){
+  if(state.autoDutch){ const a = autoAmounts(p, c || dutchCalc()); return a.food + a.alc + a.drink; }
+  const dish = state.dishes[p.dish]; return (dish?dish.price:0) + num(p.drink) + num(p.other);
+}
+function updateAutoNote(grand, dc){
+  const el = document.getElementById('auto-note'); if(!el) return;
+  if(!state.autoDutch || !dc){ el.textContent = ''; return; }
+  const n = state.people.length, nn = state.people.filter(p=>p.non).length, diff = Math.round(grand - dc.total);
+  const lines = [`더치페이 총금액 ${KRW(dc.total)} · 표 합계 ${KRW(grand)}` + (diff===0 ? ' (일치)' : ` (차이 ${KRW(diff)} · 반올림 또는 인원 차이)`)];
+  if(nn===0 && dc.non>0) lines.push(`⚠️ 비주류 이름을 입력하지 않아서 모든 분을 주류로 계산해요 (당일 더치페이(1/N) 탭에서 비주류 이름을 입력해 주세요 · 비주류 ${dc.non}명).`);
+  if(dc.head>0 && n!==dc.head) lines.push(`명단 ${n}명 · 식대 총인원 ${dc.head}명`);
+  el.innerHTML = lines.map(escapeHtml).join('<br>');
+}
+function renderPeople(){
+  const body = document.getElementById('people-body');
+  body.innerHTML = '';
+  const auto = !!state.autoDutch, dc = auto ? dutchCalc() : null;
+  let grand = 0;
+  const lookup = buildSeatLookup();
+  state.people.forEach((p,i)=>{
+    const total = personTotal(p, dc);
+    grand += total;
+    const a = auto ? autoAmounts(p, dc) : null;
+    const isHighlighted = !auto && state.dishes[p.dish] && state.dishes[0] && state.dishes[p.dish].price < state.dishes[0].price;
+    const tr = document.createElement('tr');
+    tr.className = [isHighlighted ? 'row-yellow' : '', p.non ? 'row-non' : '', p.noFood ? 'row-nofood' : ''].filter(Boolean).join(' ');
+    let foodCell, drinkCell, otherCell;
+    if(auto){
+      let opts = `<option value="-1" ${a.mi===-1?'selected':''}>전체 메뉴 (${KRW(Math.round(dc.foodPer))})</option>`;
+      dc.menu.rows.forEach((m,mi)=>{ opts += `<option value="${mi}" ${a.mi===mi?'selected':''}>${escapeHtml(m.name||('메뉴 '+(mi+1)))} (${KRW(Math.round(m.per))})</option>`; });
+      foodCell = p.noFood ? `<td><div class="dp-auto" style="text-align:center;">전체 제외</div></td>` : `<td><select data-i="${i}" data-f="menu">${opts}</select></td>`;
+      drinkCell = `<td class="amt-cell"><div class="dp-auto">${a.alc ? KRW(a.alc) : '-'}</div></td>`;
+      otherCell = `<td class="amt-cell"><div class="dp-auto">${a.drink ? KRW(a.drink) : '-'}</div></td>`;
+    } else {
+      let options = `<option value="-1" ${p.dish===-1?'selected':''}>선택 안 함</option>`;
+      state.dishes.forEach((d,di)=>{ options += `<option value="${di}" ${p.dish===di?'selected':''}>${d.name} (${KRW(d.price)})</option>`; });
+      foodCell = `<td><select data-i="${i}" data-f="dish">${options}</select></td>`;
+      drinkCell = `<td class="amt-cell"><input class="num-in money" type="text" inputmode="numeric" value="${p.drink}" data-i="${i}" data-f="drink"></td>`;
+      otherCell = `<td class="amt-cell"><input class="num-in money" type="text" inputmode="numeric" value="${p.other}" data-i="${i}" data-f="other"></td>`;
+    }
+    tr.innerHTML = `
+      <td class="name-cell"><input type="text" value="${p.name}" data-i="${i}" data-f="name"></td>
+      <td class="p-seat">${seatTagHTML(p.name, lookup)}</td>
+      <td class="chk-cell"><input type="checkbox" data-i="${i}" data-f="non" ${p.non ? 'checked' : ''} aria-label="비주류"></td>
+      <td class="chk-cell"><input type="checkbox" data-i="${i}" data-f="noFood" ${p.noFood ? 'checked' : ''} aria-label="전체 제외"></td>
+      ${foodCell}${drinkCell}${otherCell}
+      <td class="num">${KRW(total)}</td>
+      <td class="note-cell"><input type="text" value="${escapeHtml(p.note||'')}" data-i="${i}" data-f="note" placeholder="비고"></td>
+      <td><button class="icon-btn" onclick="removePerson(${i})" aria-label="삭제">×</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  document.getElementById('people-total').textContent = KRW(grand);
+  updateAutoNote(grand, dc);
+  body.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('input', e=>{
+      const {i,f} = e.target.dataset;
+      const p = state.people[i];
+      if(f==='name') p.name = e.target.value;
+      else if(f==='non') p.non = e.target.checked;
+      else if(f==='noFood') p.noFood = e.target.checked;
+      else if(f==='note') p.note = e.target.value;
+      else if(f==='menu') p.menu = parseInt(e.target.value);
+      else if(f==='dish') p.dish = parseInt(e.target.value);
+      else p[f] = num(e.target.value);
+      updatePersonRow(parseInt(i));
+      if(f==='non'){ syncNonFromPeople(); renderNonChips(); }
+      else if(f==='noFood'){ updateDutch(); renderNonChips(); }
+      else if(f==='name') renderNonChips();
+    });
+  });
+  renderNonChips();
+  renderPeopleReceipts();
+}
+function updatePersonRow(i){
+  const p = state.people[i];
+  const dc = state.autoDutch ? dutchCalc() : null;
+  const tr = document.querySelectorAll('#people-body tr')[i];
+  if(tr){
+    const totalCell = tr.querySelector('td.num');
+    if(totalCell) totalCell.textContent = KRW(personTotal(p, dc));
+    const sc = tr.querySelector('td.p-seat'); if(sc) sc.innerHTML = seatTagHTML(p.name);
+    const isHighlighted = !state.autoDutch && state.dishes[p.dish] && state.dishes[0] && state.dishes[p.dish].price < state.dishes[0].price;
+    tr.classList.toggle('row-yellow', !!isHighlighted);
+    tr.classList.toggle('row-non', !!p.non);
+    tr.classList.toggle('row-nofood', !!p.noFood);
+  }
+  const grand = state.people.reduce((s,pp)=>s+personTotal(pp, dc),0);
+  document.getElementById('people-total').textContent = KRW(grand);
+  updateAutoNote(grand, dc);
+  saveState();
+}
+function addPerson(){ state.people.push({name:'', dish:-1, drink:1900, other:0}); renderPeople(); saveState(); }
+function removePerson(i){ state.people.splice(i,1); renderPeople(); saveState(); }
+
+function computeRows(){
+  const total = Math.max(0, parseInt(state.seatTotal)||0);
+  const perRow = Math.max(1, parseInt(state.seatPerRow)||1);
+  const fullRows = Math.floor(total/perRow);
+  const remainder = total % perRow;
+  const rows = [];
+  let seatNo = 1;
+  for(let r=0;r<fullRows;r++){
+    const isLast = (r === fullRows-1);
+    const size = (isLast && remainder>0) ? perRow+remainder : perRow;
+    const row = [];
+    for(let i=0;i<size;i++){ row.push(seatNo++); }
+    rows.push(row);
+  }
+  if(fullRows===0 && total>0){ rows.push(Array.from({length:total},(_,i)=>i+1)); }
+  return rows;
+}
+function ensureSeatArrayLength(){
+  const total = Math.max(0, parseInt(state.seatTotal)||0);
+  while(state.seats.length < total) state.seats.push({name:'', loc:-1});
+  state.seats.length = total;
+}
+function renderLocations(){
+  const box = document.getElementById('loc-list');
+  box.innerHTML = '';
+  state.locations.forEach((loc,i)=>{
+    const cnt = state.seats.filter(s=>s.loc===i).length;
+    const row = document.createElement('div');
+    row.className = 'loc-row';
+    row.innerHTML = `
+      <input type="color" value="${loc.color}" data-i="${i}" data-f="color">
+      <input type="text" placeholder="장소명" value="${loc.name}" data-i="${i}" data-f="name" style="flex:1;">
+      <input type="text" placeholder="출구" value="${loc.exit}" data-i="${i}" data-f="exit" style="flex:1;">
+      <input type="text" placeholder="시간" value="${loc.time}" data-i="${i}" data-f="time" style="flex:1;">
+      <span class="cnt">${cnt}명</span>
+      <button class="icon-btn" onclick="removeLocation(${i})" aria-label="삭제">×</button>
+    `;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const {i,f} = e.target.dataset;
+      state.locations[i][f] = e.target.value;
+      if(f==='name') updateSeatOptionLabels();
+      updateLocationCounts();
+      updateSeatPreviewOnly();
+    });
+  });
+}
+function updateLocationCounts(){
+  document.querySelectorAll('#loc-list .loc-row').forEach((row,i)=>{
+    const cntEl = row.querySelector('.cnt');
+    if(cntEl) cntEl.textContent = state.seats.filter(s=>s.loc===i).length + '명';
+  });
+}
+function updateSeatOptionLabels(){
+  document.querySelectorAll('#seat-list select').forEach(sel=>{
+    Array.from(sel.options).forEach(opt=>{
+      const li = parseInt(opt.value, 10);
+      if(li>=0 && state.locations[li]) opt.textContent = state.locations[li].name || '(이름 없음)';
+    });
+  });
+}
+function paintSeatRows(){
+  document.querySelectorAll('#seat-list .seat-row').forEach((row,i)=>{
+    const s = state.seats[i]; if(!s) return;
+    const has = s.loc>=0 && state.locations[s.loc];
+    const c = has ? state.locations[s.loc].color : '';
+    row.style.borderLeftColor = has ? c : 'transparent';
+    row.style.background = has ? c + '55' : '';
+  });
+}
+function updateSeatPreviewOnly(){
+  paintSeatRows();
+  document.getElementById('live-seat-sheet').innerHTML = buildSeatSheetHTML();
+  saveState();
+}
+function addLocation(){
+  const palette = ['#92D14F','#FFC000','#F2CFEF','#FFFF00','#F5B7B1','#D7BDE2'];
+  state.locations.push({ name:'', exit:'', time:'', color: palette[state.locations.length % palette.length] });
+  renderSeatTab();
+}
+function removeLocation(i){
+  state.seats.forEach(s=>{ if(s.loc===i) s.loc=-1; else if(s.loc>i) s.loc--; });
+  state.locations.splice(i,1);
+  renderSeatTab();
+}
+function renderSeats(){
+  ensureSeatArrayLength();
+  const box = document.getElementById('seat-list');
+  box.innerHTML = '';
+  state.seats.forEach((s,i)=>{
+    let options = `<option value="-1" ${s.loc===-1?'selected':''}>미지정</option>`;
+    state.locations.forEach((loc,li)=>{ options += `<option value="${li}" ${s.loc===li?'selected':''}>${loc.name||'(이름 없음)'}</option>`; });
+    const row = document.createElement('div');
+    row.className = 'seat-row';
+    row.innerHTML = `<span class="no">${i+1}번</span><input type="text" placeholder="이름" value="${s.name}" data-i="${i}" data-f="name"><select data-i="${i}" data-f="loc">${options}</select>`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('input', e=>{
+      const {i,f} = e.target.dataset;
+      if(f==='loc') state.seats[i].loc = parseInt(e.target.value);
+      else state.seats[i][f] = e.target.value;
+      updateLocationCounts();
+      updateSeatPreviewOnly();
+    });
+  });
+  paintSeatRows();
+}
+document.getElementById('bus-photo-input').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{ state.bus.photo = ev.target.result; renderSeatTab(); };
+  reader.readAsDataURL(file);
+});
+function seatColor(s){ if(s.loc===-1 || !state.locations[s.loc]) return '#FFFFFF'; return state.locations[s.loc].color; }
+function fmtDate(d){
+  if(!d) return '';
+  const dt = new Date(d+'T00:00:00');
+  if(isNaN(dt)) return d;
+  const days=['일','월','화','수','목','금','토'];
+  return `${dt.getFullYear()}년 ${dt.getMonth()+1}월 ${dt.getDate()}일 (${days[dt.getDay()]}요일)`;
+}
+function seatCellHTML(n){
+  const s = state.seats[n-1];
+  return `<div class="seat-cell" style="background:${seatColor(s)};">
+      <div class="seat-num">${n}번</div>
+      <div class="seat-name">${s.name||'-'}</div>
+    </div>`;
+}
+
+/* 20인승 프리미엄: 왼쪽 2열 · 통로 · 오른쪽(출입문) 1열, 16번 줄은 왼쪽 안쪽 자리 없음 */
+const PREMIUM20_ROWS = [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,null,17],[18,19,20]];
+/* 카운티 중형: 앞줄(운전석 · 전면유리 · 1번) / 왼쪽 2열씩 · 중간 통로 · 오른쪽 1열(2번 · 문 · 9 · 10 · 11) / 맨 뒤 4석 */
+const COUNTY_ROWS = [[3,4,2],[5,6,'door'],[7,8,9],[12,13,10],[14,15,11]];
+function buildCountyChartHTML(){
+  const drv = (state.bus && state.bus.driver) ? escapeHtml(state.bus.driver) : '';
+  let rows = `<tr><td class="pm-driver">운전석${drv ? `<div class="seat-name">${drv}</div>` : ''}</td><td class="pm-glass" colspan="2">전면 유리</td>${pmCell(1)}</tr>`;
+  COUNTY_ROWS.forEach((r,i)=>{
+    const aisle = i===0 ? `<td class="pm-aisle-lbl" rowspan="${COUNTY_ROWS.length}">중<br>간<br>통<br>로</td>` : '';
+    const right = r[2]==='door' ? '<td class="pm-door">문</td>' : pmCell(r[2]);
+    rows += `<tr>${pmCell(r[0])}${pmCell(r[1])}${aisle}${right}</tr>`;
+  });
+  rows += `<tr>${[16,17,18,19].map(n=>pmCell(n)).join('')}</tr>`;
+  return `<table class="pm-chart">
+    <colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup>
+    ${rows}
+  </table>`;
+}
+/* 솔라티 15인승: 앞줄(운전석·조수석) / 2열(창문·복도·보조의자) / 3열 / 4열(싱글석) / 뒷좌석 4석 */
+const SOLATI15_ROWS = [[1,null,null,2],[3,4,5,null],[6,7,null,8],[9,10,null,11],[12,13,14,15]];
+const SOLATI_DEFAULT_LABEL = { 1:'운전석', 2:'조수석', 5:'보조의자' };
+function buildSolatiChartHTML(){
+  const rows = SOLATI15_ROWS.map(r=>`<tr>${r.map(n=>pmCell(n)).join('')}</tr>`).join('');
+  return `<table class="pm-chart">
+    <colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup>
+    <tr><td class="pm-head" colspan="2">운전석 쪽</td><td class="pm-none"></td><td class="pm-head">출입문 쪽</td></tr>
+    ${rows}
+  </table>`;
+}
+function pmCell(n){
+  if(n==null) return '<td class="pm-empty"></td>';
+  const s = state.seats[n-1] || { name:'', loc:-1 };
+  const lab = state.busType==='solati15' ? (s.label || SOLATI_DEFAULT_LABEL[n] || '') : '';
+  return `<td class="pm-seat" style="background:${seatColor(s)};"><div class="seat-num">${n}번</div>${lab ? `<div style="font-size:9.5px; color:#555; line-height:1.2;">${escapeHtml(lab)}</div>` : ''}<div class="seat-name">${s.name||'-'}</div></td>`;
+}
+function buildPremiumChartHTML(){
+  const rows = PREMIUM20_ROWS.map(r=>`<tr>${pmCell(r[0])}${pmCell(r[1])}<td class="pm-aisle"></td>${pmCell(r[2])}</tr>`).join('');
+  return `<table class="pm-chart">
+    <colgroup><col style="width:22.2%"><col style="width:22.2%"><col style="width:33.3%"><col style="width:22.2%"></colgroup>
+    <tr><td class="pm-head">운전석</td><td class="pm-none"></td><td class="pm-none"></td><td class="pm-head">출입문</td></tr>
+    ${rows}
+  </table>`;
+}
+function buildSeatSheetHTML(){
+  const rows = computeRows();
+  const perRow = Math.max(1, parseInt(state.seatPerRow)||1);
+  const leftCols = perRow>=4 ? Math.ceil(perRow/2) : Math.max(1, perRow-1);   /* 3석=2+1, 4석=2+2 */
+  const rightCols = Math.max(1, perRow-leftCols);
+  let gridRows = '';
+  rows.forEach(row=>{
+    const isSplitRow = row.length === perRow;
+    if(isSplitRow){
+      const left = row.slice(0,leftCols), right = row.slice(leftCols);
+      gridRows += `<div class="seat-flex-row">
+        ${left.map(seatCellHTML).join('')}
+        <div class="seat-gap-cell"></div>
+        ${right.map(seatCellHTML).join('')}
+      </div>`;
+    } else {
+      gridRows += `<div class="seat-flex-row">${row.map(seatCellHTML).join('')}</div>`;
+    }
+  });
+  const headerRow = `<div class="seat-header-row">
+      <div class="lbl" style="flex:${leftCols}; border-right:1px solid #333;">운전석</div>
+      <div class="seat-gap-cell"></div>
+      <div class="lbl" style="flex:${rightCols};">출입문</div>
+    </div>`;
+  const seatChart = state.busType==='premium20' ? buildPremiumChartHTML() : state.busType==='solati15' ? buildSolatiChartHTML() : state.busType==='county20' ? buildCountyChartHTML() : `<div class="seat-chart">${headerRow}${gridRows}</div>`;
+  const nLoc = state.locations.length;
+
+  /* 픽업 장소별 행 생성 (셀 인라인 스타일 적용으로 색상 미출력 문제 해결) */
+  const pickupRows = state.locations.map((loc,li)=>{
+    const cnt = state.seats.filter(s=>s.loc===li).length;
+    const clubCell = li===0 ? `<td class="club-cell" rowspan="${nLoc}">${state.club||''}</td>` : '';
+    const bgColor = loc.color || '#FFFFFF';
+    return `<tr>${clubCell}<td style="background:${bgColor};">${loc.name||'-'} ${loc.exit||''}</td><td style="background:${bgColor};">${loc.time||''}</td><td class="cnt-cell" style="background:${bgColor};">${cnt}명</td></tr>`;
+  }).join('');
+
+  /* 총 인원수 계산 (좌석수 데이터와 동기화) */
+  const total = state.seats.length;
+  const carsShown = state.cars.filter(c=>c.name||c.plate||c.note);
+  const carTable = carsShown.length ? `<table class="car-table">
+      <tr><td class="ch" style="width:62px;">구분</td><td class="ch">운전자</td><td class="ch">차량</td><td class="ch" style="width:44px;">인원</td><td class="ch">비고</td></tr>
+      ${carsShown.map(c=>`<tr><td style="text-align:center;">${escapeHtml(c.kind||'자차')}</td><td>${escapeHtml(c.name||'')}</td><td>${escapeHtml(c.plate||'')}</td><td style="text-align:center;">${c.count===''||c.count==null?'':escapeHtml(c.count)}</td><td>${escapeHtml(c.note||'')}</td></tr>`).join('')}
+    </table>` : '';
+  const noteText = ((state.bus && state.bus.note) || '').trim();
+  const noteBlock = noteText ? `<div class="remark-box"><b>비고</b><br>${escapeHtml(noteText).replace(/\n/g,'<br>')}</div>` : '';
+  const photoBlock = state.bus.photo
+    ? `<img class="bus-photo" src="${state.bus.photo}">`
+    : `<div class="bus-photo" style="display:flex;align-items:center;justify-content:center;color:#888;font-size:12px;">버스 사진 없음</div>`;
+  return `
+    <div class="seat-sheet-title">
+      <div class="mt">⛰️ ${state.mountain||''} ⛰️</div>
+      <div class="dt">${fmtDate(state.date)}${state.busList.length>1 ? ' · '+escapeHtml(state.busList[state.activeBus].name) : ''}</div>
+    </div>
+    <div class="seat-sheet-flex">
+      <div class="seat-sheet-left">
+        ${seatChart}
+      </div>
+      <div style="width:180px;">
+        ${photoBlock}
+        <div class="bus-info-box">
+          <b>■ ${state.mountain||''} 버스정보</b>
+          차량번호 : ${state.bus.plate||''}<br>기사님 : ${state.bus.driver||''}<br>연락처 : ${state.bus.phone||''}<br>충전케이블 : ${state.bus.cable||''}
+        </div>
+      </div>
+    </div>
+    <table class="pickup-table">
+      ${pickupRows}
+      <tr><td colspan="4" class="total-row-cell">총 ${total} 명</td></tr>
+    </table>
+    ${carTable}${noteBlock}
+  `;
+}
+
+function renderSeatTab(){
+  state.bus.plate = document.getElementById('bus-plate').value;
+  state.bus.driver = document.getElementById('bus-driver').value;
+  state.bus.phone = document.getElementById('bus-phone').value;
+  state.bus.cable = document.getElementById('bus-cable').value;
+  state.bus.note = document.getElementById('bus-note').value;
+  state.seatTotal = document.getElementById('seat-total').value;
+  state.seatPerRow = document.getElementById('seat-per-row').value;
+  renderLocations();
+  renderSeats();
+  document.getElementById('live-seat-sheet').innerHTML = buildSeatSheetHTML();
+  saveState();
+}
+
+function onHeaderChange(){
+  state.mountain = document.getElementById('mountain').value;
+  state.date = document.getElementById('ev-date').value;
+  state.club = document.getElementById('club').value;
+  renderSeatTab();
+  saveState();
+}
+['mountain','ev-date','club'].forEach(id=>document.getElementById(id).addEventListener('input', onHeaderChange));
+['unit-price','head-count','income-note','bus-fee'].forEach(id=>document.getElementById(id).addEventListener('input', recalcLedger));
+['bus-plate','bus-driver','bus-phone','bus-cable','bus-note','seat-total','seat-per-row'].forEach(id=>document.getElementById(id).addEventListener('input', renderSeatTab));
+
+function lgMoney(n){ return n ? KRW(n) : '-'; }
+function lgBlock(o){
+  const inc = o.income.map((r,i)=>`<tr>${i===0 ? `<td class="lg-inc-l" rowspan="${o.income.length}">수입</td>` : ''}<td class="lg-sub">${r.label}</td><td>${r.content}</td><td class="num lg-inc">${KRW(r.amount)}</td></tr>`).join('');
+  const exp = o.expense.map((r,i)=>`<tr>${i===0 ? `<td class="lg-exp-l" rowspan="${o.expense.length+1}">지출</td>` : ''}<td class="lg-sub">${r.label}</td><td>${r.content}</td><td class="num">${r.amountHtml}</td></tr>`).join('');
+  return `
+    <div class="sheet-head">
+      <div class="htitle">${o.title}</div>
+      <div class="hsub">${o.sub}</div>
+    </div>
+    <table class="lg">
+      <colgroup><col style="width:11%"><col style="width:16%"><col><col style="width:19%"></colgroup>
+      <tr><th colspan="2">구 분</th><th>내 용</th><th>금 액</th></tr>
+      ${inc}${exp}
+      <tr class="lg-sum"><td colspan="2" style="text-align:right; font-weight:700;">계</td><td class="num lg-red">${lgMoney(o.expTotal)}</td></tr>
+      <tr class="lg-grand"><td colspan="3">합계 / ${o.balLabel}</td><td class="num lg-red">${KRW(o.balance)}</td></tr>
+    </table>`;
+}
+function buildBusLedgerHTML(){
+  const unit = state.unitPrice, head = state.headCount, incomeTotal = unit*head;
+  const fullTotal = state.fullRefunds.reduce((s,r)=>s+num(r.amount),0);
+  const halfTotal = state.halfRefunds.reduce((s,r)=>s+num(r.amount)*0.5,0);
+  const busFee = state.busFee;
+  const expTotal = fullTotal+halfTotal+busFee;
+  const fullList = state.fullRefunds.filter(r=>r.name);
+  const halfList = state.halfRefunds.filter(r=>r.name);
+  const nrList = state.noRefunds.filter(r=>r.name);
+  const nrTotal = nrList.reduce((s,r)=>s+num(r.amount),0);
+  const nrSame = nrList.length>0 && nrList.every(r=>num(r.amount)===num(nrList[0].amount));
+  const nrNames = nrList.map(r=> nrSame ? escapeHtml(r.name) : `${escapeHtml(r.name)}(${KRW(r.amount)})`).join(', ');
+  const note = (state.incomeNote||'').trim();
+  return lgBlock({
+    title: `🚌 ${escapeHtml(state.mountain||'')} 버스비 정산내역`,
+    sub: `${state.date ? fmtDate(state.date)+' · ' : ''}(단위:원)`,
+    income: [{ label:'회비 입금', amount:incomeTotal,
+      content: `${KRW(unit)} x ${head}명` + (note ? `<div class="small">(${escapeHtml(note)})</div>` : '') }],
+    expense: [
+      { label:'전액 환불', content: fullList.length ? `${fullList.length}명(${fullList.map(r=>escapeHtml(r.name)).join(', ')})` : '', amountHtml: lgMoney(fullTotal) },
+      { label:'50% 환불', content: halfList.length ? `${halfList.length}명(${halfList.map(r=>`${escapeHtml(r.name)}(원금 ${KRW(r.amount)})`).join(', ')})` : '', amountHtml: lgMoney(halfTotal) },
+      { label:'환불 불가', content: nrList.length ? `${nrList.length}명(${nrNames})` + (nrSame && num(nrList[0].amount) ? `<div class="small">1인 ${KRW(nrList[0].amount)} x ${nrList.length}명</div>` : '') : '',
+        amountHtml: nrTotal ? `${KRW(nrTotal)}<div class="small">지출 제외</div>` : '-' },
+      { label:'버스비', content: KRW(busFee), amountHtml: lgMoney(busFee) }
+    ],
+    expTotal, balance: incomeTotal-expTotal, balLabel: '운영자금 귀속'
+  });
+}
+function activeCar(){ return state.activeLedger >= 0 ? (state.carLedgers[state.activeLedger] || null) : null; }
+function carLedgerCalc(L){
+  L = L || activeCar();
+  const count = num(L.count);
+  const income = num(L.unitPrice) * count;
+  const rows = L.expenses.map(e=>({ ...e, sum: num(e.toll)+num(e.fuel)+num(e.other) }));
+  const expense = rows.reduce((s,r)=>s+r.sum,0);
+  return { count, income, rows, expense, balance: income-expense };
+}
+function buildCarLedgerHTML(L){
+  const c = carLedgerCalc(L);
+  const expRows = c.rows.length ? c.rows : [{ kind:'차량지원비', name:'', toll:0, fuel:0, other:0, otherLabel:'', sum:0 }];
+  const parts = r=>{
+    const a = [];
+    if(num(r.toll)) a.push(`톨비 ${KRW(r.toll)}`);
+    if(num(r.fuel)) a.push(`주유비 ${KRW(r.fuel)}`);
+    if(num(r.other)) a.push(`${escapeHtml(r.otherLabel||'기타')} ${KRW(r.other)}`);
+    return a.join(' + ');
+  };
+  return lgBlock({
+    title: `🚗 ${escapeHtml(state.mountain||'')} ${state.carLedgers.length>1 ? escapeHtml(L.name||'자차') : '자차'} 정산내역`,
+    sub: '(단위:원)',
+    income: [{ label:'회비 입금', amount:c.income,
+      content: `${KRW(L.unitPrice)} x ${c.count}명` + ((L.riders||'').trim() ? `<div class="small">${escapeHtml(L.riders.trim())}</div>` : '') }],
+    expense: expRows.map(r=>({
+      label: escapeHtml(r.kind||'차량지원비'),
+      content: [r.name ? escapeHtml(r.name) : '', parts(r)].filter(Boolean).join(' : '),
+      amountHtml: lgMoney(r.sum)
+    })),
+    expTotal: c.expense, balance: c.balance,
+    balLabel: escapeHtml((L.balanceLabel||'').trim() || `${state.mountain ? state.mountain+' ' : ''}식대 정산시 사용`)
+  });
+}
+function ledgerHasReceipts(){ const L = activeCar(); return (L ? L.receipts : state.receipts.bus).length > 0; }
+function wrapReceipts(html, imgs, reserve){
+  if(!reserve) return html;
+  return `<div class="lg-flex"><div class="lg-main">${html}</div><div class="rc-col">${imgs.map(s=>`<img src="${s}">`).join('')}</div></div>`;
+}
+function buildLedgerSheetHTML(){
+  const reserve = ledgerHasReceipts(), L = activeCar();
+  return L ? wrapReceipts(buildCarLedgerHTML(L), L.receipts, reserve)
+           : wrapReceipts(buildBusLedgerHTML(), state.receipts.bus, reserve);
+}
+function seatCellExport(name, lookup){
+  const i = lookup.get(normMember(name));
+  return i ? `<td class="ctr"${i.color ? ` style="background:${i.color};"` : ''}>${escapeHtml(i.label)}</td>` : '<td class="ctr">-</td>';
+}
+function buildPeopleSheetAutoHTML(){
+  const c = dutchCalc(), R = c.menu.rows, lookup = buildSeatLookup();
+  const NP = ppNoteParts();
+  let grand = 0;
+  const rows = state.people.map((p,i)=>{
+    const a = autoAmounts(p, c), total = a.food + a.alc + a.drink;
+    grand += total;
+    const cells = R.map((m,mi)=>{
+      const show = !p.noFood && (a.mi===-1 || a.mi===mi), hl = a.mi===mi && mi>0 && !p.noFood;
+      return `<td class="num${hl ? ' yellow-cell' : ''}">${show ? KRW(Math.round(m.per)) : '-'}</td>`;
+    }).join('');
+    return `<tr class="${i%2?'zebra':''}"><td class="ctr">${i+1}</td><td>${escapeHtml(p.name||'-')}${p.non ? ' <span style="font-size:11px; color:#1F7FA8; font-weight:700;">(비주류)</span>' : ''}${p.noFood ? ' <span style="font-size:11px; color:#C2710C; font-weight:700;">(전체 제외)</span>' : ''}</td>${seatCellExport(p.name, lookup)}${cells}<td class="num">${a.alc ? KRW(a.alc) : '-'}</td><td class="num">${a.drink ? KRW(a.drink) : '-'}</td><td class="num">${KRW(total)}</td>${NP.td(p)}</tr>`;
+  }).join('');
+  const heads = R.map((m,i)=>`<th>${escapeHtml(m.name || ('메뉴 '+(i+1)))}</th>`).join('');
+  return `
+    <div class="sheet-head">
+      <div class="htitle">🚌 ${escapeHtml(state.mountain||'')}</div>
+      <div class="hsub">개인별 식대·주류 정산 · 더치페이 기준 (단위:원)</div>
+    </div>
+    <table>
+      <tr><th rowspan="2" style="width:28px;">No</th><th rowspan="2">이름</th><th rowspan="2">좌석</th><th colspan="${Math.max(R.length,1)}">식대</th><th rowspan="2">주류</th><th rowspan="2">비주류</th><th rowspan="2">합계</th>${NP.th}</tr>
+      <tr>${heads || '<th>-</th>'}</tr>
+      ${rows}
+      <tr class="grand"><td colspan="${5+Math.max(R.length,1)}">합계</td><td class="num">${KRW(grand)}</td>${NP.grandPad}</tr>
+    </table>
+    ${NP.block}
+    <div style="margin-top:8px; font-size:12px; color:#444; line-height:1.6;">※ 더치페이 총금액 ${KRW(c.total)} (식대 ${KRW(c.food)} · 주류 ${KRW(c.alc)} · 음료수 ${KRW(c.drink)}) 기준 · 비주류 ${c.non}명 · 주류 ${c.drk}명 · 1인당 금액은 반올림해서 표시해요.</div>
+  `;
+}
+function buildPeopleSheetHTML(){
+  if(state.autoDutch) return buildPeopleSheetAutoHTML();
+  const dishes = state.dishes;
+  const NP = ppNoteParts();
+  const lookup = buildSeatLookup();
+  let grand = 0;
+  const rows = state.people.map((p,i)=>{
+    const dish = dishes[p.dish];
+    const total = personTotal(p);
+    grand += total;
+    const dishCells = dishes.map((d,di)=>{
+      const has = p.dish===di; const isSecondary = di>0;
+      return `<td class="num${has && isSecondary ? ' yellow-cell':''}">${has?KRW(d.price):'-'}</td>`;
+    }).join('');
+    return `<tr class="${i%2?'zebra':''}"><td class="ctr">${i+1}</td><td>${p.name||'-'}${p.non ? ' <span style="font-size:11px; color:#1F7FA8; font-weight:700;">(비주류)</span>' : ''}</td>${seatCellExport(p.name, lookup)}${dishCells}<td class="num">${p.drink?KRW(p.drink):'-'}</td><td class="num">${p.other?KRW(p.other):'-'}</td><td class="num">${KRW(total)}</td>${NP.td(p)}</tr>`;
+  }).join('');
+  const dishHeaders = dishes.map(d=>`<th>${d.name}</th>`).join('');
+  return `
+    <div class="sheet-head">
+      <div class="htitle">🚌 ${state.mountain||''}</div>
+      <div class="hsub">개인별 식대·주류 정산 (단위:원)</div>
+    </div>
+    <table>
+      <tr><th rowspan="2" style="width:28px;">No</th><th rowspan="2">이름</th><th rowspan="2">좌석</th><th colspan="${Math.max(dishes.length,1)}">식대</th><th rowspan="2">주류</th><th rowspan="2">비주류</th><th rowspan="2">합계</th>${NP.th}</tr>
+      <tr>${dishHeaders || '<th>-</th>'}</tr>
+      ${rows}
+      <tr class="grand"><td colspan="${5+dishes.length}">합계</td><td class="num">${KRW(grand)}</td>${NP.grandPad}</tr>
+    </table>
+    ${NP.block}
+  `;
+}
+let currentJpgBlob = null;
+function openJpg(){
+  const tab = activeTab();
+  document.getElementById('jpg-modal').classList.add('open');
+  document.getElementById('jpg-status').textContent = '이미지를 만드는 중...';
+  document.getElementById('jpg-preview').removeAttribute('src');
+  document.getElementById('jpg-save-btn').disabled = true;
+
+  const exportSheet = document.getElementById('export-sheet');
+  exportSheet.style.width = ((tab==='ledger' && ledgerHasReceipts()) || (tab==='dutch' && state.receipts.dutch.length>0) || (tab==='people' && state.receipts.dutch.length>0) || (tab==='lodge' && rcList('lodge').length>0)) ? '960px' : (tab==='settle' ? '1000px' : '');
+  if(tab==='ledger') exportSheet.innerHTML = buildLedgerSheetHTML();
+  else if(tab==='people') exportSheet.innerHTML = wrapReceipts(buildPeopleSheetHTML(), state.receipts.dutch, state.receipts.dutch.length>0);
+  else if(tab==='dutch') exportSheet.innerHTML = wrapReceipts(buildDutchSheetHTML(), state.receipts.dutch, state.receipts.dutch.length>0);
+  else if(tab==='settle') exportSheet.innerHTML = buildSettleSheetHTML();
+  else if(tab==='lodge') exportSheet.innerHTML = wrapReceipts(buildLodgeSheetHTML(), rcList('lodge'), rcList('lodge').length>0);
+  else exportSheet.innerHTML = `<div style="width:640px;">${buildSeatSheetHTML()}</div>`;
+
+  const makeCanvas = scale => Promise.resolve().then(()=>html2canvas(exportSheet, { scale, backgroundColor:'#ffffff', useCORS:true }));
+  /* 폰은 큰 이미지를 못 만들 때가 있어서, 실패하면 작은 크기로 한 번 더 시도해요 */
+  makeCanvas(2).catch(()=>makeCanvas(1)).then(canvas=>{
+    canvas.toBlob(blob=>{
+      currentJpgBlob = blob;
+      try{
+        const f = new File([blob], 'x.jpg', { type:'image/jpeg' });
+        document.getElementById('jpg-share-btn').style.display = (navigator.canShare && navigator.canShare({ files:[f] })) ? '' : 'none';
+      }catch(e){ document.getElementById('jpg-share-btn').style.display = 'none'; }
+      const url = URL.createObjectURL(blob);
+      document.getElementById('jpg-preview').src = url;
+      document.getElementById('jpg-status').textContent = '아래 저장 버튼으로 JPG 파일을 받을 수 있어요.';
+      document.getElementById('jpg-save-btn').disabled = false;
+    }, 'image/jpeg', 0.95);
+  }).catch(e=>{
+    console.error(e);
+    const why = (typeof html2canvas === 'undefined') ? ' (이미지 만드는 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.)' : (e && e.message ? ' (' + String(e.message).slice(0,80) + ')' : '');
+    document.getElementById('jpg-status').textContent = '이미지를 만들지 못했어요. 다시 시도해 주세요.' + why;
+  });
+}
+function closeJpg(){ document.getElementById('jpg-modal').classList.remove('open'); }
+async function saveJpg(){
+  if(!currentJpgBlob) return;
+  const statusEl = document.getElementById('jpg-status');
+  try{
+    const downloads = await claude.use('downloads');
+    if(!downloads){ statusEl.textContent = '이 화면에서는 자동 저장이 지원되지 않아요. 이미지를 길게 눌러 저장해 주세요.'; return; }
+    const tabLabel = { ledger:'정산내역', people:'개인별_식대정산', dutch:'당일_더치페이', lodge:'숙박', settle:'숙박_정산', seat:'좌석표' }[activeTab()];
+    const busSuffix = (activeTab()==='seat' && state.busList.length>1) ? '_' + state.busList[state.activeBus].name : '';
+    const ledgerSuffix = (activeTab()==='ledger' && state.carLedgers.length) ? '_' + (activeCar() ? activeCar().name : '버스비').replace(/[\\\/:*?"<>|]/g,'') : '';
+    const filename = (state.mountain||'버스트립') + '_' + tabLabel + busSuffix + ledgerSuffix + '.jpg';
+    const res = await downloads.save({ filename, data: currentJpgBlob });
+    statusEl.textContent = res.status === 'saved' ? '저장했어요.' : '전달했어요.';
+  }catch(e){
+    if(e && e.code === 'declined'){ statusEl.textContent = '저장을 취소했어요.'; }
+    else{ statusEl.textContent = '저장하지 못했어요. 이미지를 길게 눌러 저장해 주세요.'; }
+  }
+}
+
+
+/* ===== 엑셀로 저장 · 엑셀에서 불러오기 (전체 데이터 백업) =====
+   보기용 시트(기본정보·좌석배정·픽업장소) + 전체 데이터가 들어 있는 '_데이터' 시트로 만들어요.
+   불러올 때는 '_데이터' 시트를 읽어요. 사진·영수증은 용량 때문에 엑셀에 넣지 않고, 불러올 때 지금 화면의 사진을 그대로 둬요. */
+function xlStatus(msg){ const el = document.getElementById('xl-backup-status'); if(el) el.textContent = msg || ''; }
+function stateWithoutImages(){
+  const c = JSON.parse(JSON.stringify(state));
+  c.receipts = { bus:[], dutch:[], lodge:[] };
+  (c.carLedgers||[]).forEach(x=>{ x.receipts = []; });
+  if(c.bus) c.bus.photo = '';
+  (c.busList||[]).forEach(b=>{ if(b.data && b.data.bus) b.data.bus.photo = ''; });
+  return c;
+}
+function buildBackupWorkbook(){
+  const wb = XLSX.utils.book_new();
+  const bus = state.bus || {};
+  const info = [['항목','값'], ['산 이름',state.mountain||''], ['날짜',state.date||''], ['산악회',state.club||''],
+    ['차량번호',bus.plate||''], ['기사님',bus.driver||''], ['연락처',bus.phone||''], ['충전케이블',bus.cable||''],
+    ['', ''], ['※ 이 시트는 보기용이에요. 불러오기는 \'_데이터\' 시트를 읽어요.','']];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(info), '기본정보');
+  const locs = state.locations || [];
+  const seats = [['번호','이름','픽업장소']].concat((state.seats||[]).map((s,i)=>[i+1, s.name||'', (locs[s.loc]||{}).name||'']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(seats), '좌석배정');
+  const pick = [['장소','출구','시간']].concat(locs.map(l=>[l.name||'', l.exit||'', l.time||'']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pick), '픽업장소');
+  const json = JSON.stringify(stateWithoutImages());
+  const rows = [['bus-trip-tool-v3 데이터 (수정하지 마세요)']];
+  for(let i=0;i<json.length;i+=30000) rows.push([json.slice(i, i+30000)]);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), '_데이터');
+  return wb;
+}
+async function saveXlsx(){
+  try{
+    const wb = buildBackupWorkbook();
+    const out = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+    const blob = new Blob([out], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const filename = ((state.mountain||'버스트립') + '_데이터백업.xlsx').replace(/[\\\/:*?"<>|]/g,'');
+    let done = false;
+    try{
+      const downloads = (typeof claude !== 'undefined') ? await claude.use('downloads') : null;
+      if(downloads){ const res = await downloads.save({ filename, data: blob }); xlStatus(res.status === 'saved' ? '엑셀로 저장했어요.' : '엑셀 파일을 전달했어요.'); done = true; }
+    }catch(e){ if(e && e.code === 'declined'){ xlStatus('저장을 취소했어요.'); return; } }
+    if(!done){
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      xlStatus('엑셀 파일을 내려받았어요.');
+    }
+  }catch(e){ xlStatus('엑셀로 저장하지 못했어요. 다시 시도해 주세요.'); }
+}
+async function loadXlsxBackup(file){
+  if(!file) return;
+  try{
+    const wb = XLSX.read(await file.arrayBuffer(), { type:'array' });
+    const ws = wb.Sheets['_데이터'];
+    if(!ws){ xlStatus('이 엑셀에는 \'_데이터\' 시트가 없어요. "엑셀로 저장"으로 만든 파일을 골라 주세요.'); return; }
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    const data = JSON.parse(rows.slice(1).map(r=>String(r[0]||'')).join(''));
+    if(!data || typeof data !== 'object' || !Array.isArray(data.seats)){ xlStatus('데이터를 읽지 못했어요. 올바른 백업 파일인지 확인해 주세요.'); return; }
+    if(!(await openDialog('엑셀 파일의 내용으로 지금 입력한 내용을 모두 바꿀까요?', { okText:'불러오기' }))){ xlStatus('불러오기를 취소했어요.'); return; }
+    data.seedId = state.seedId;
+    data.receipts = state.receipts || { bus:[], dutch:[], lodge:[] };
+    if(data.bus && state.bus) data.bus.photo = state.bus.photo || '';
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    location.reload();
+  }catch(e){ xlStatus('불러오지 못했어요. 올바른 백업 파일인지 확인해 주세요.'); }
+}
+document.getElementById('xl-load-input').addEventListener('change', e=>{ const f = e.target.files[0]; e.target.value = ''; loadXlsxBackup(f); });
+
+/* ===== 엑셀 불러오기 (신청서 + 좌석) ===== */
+const pad2 = n => String(n).padStart(2,'0');
+function cleanText(raw){
+  /* 위첨자 숫자(⁷²)는 일반 숫자로, 깨진 특수문자는 제거 */
+  return String(raw==null?'':raw).normalize('NFKC')
+    .replace(/[^0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ\s\/().,·\-:~]/g,'').replace(/\s+/g,' ').trim();
+}
+function normMember(raw){
+  const s = cleanText(raw);
+  if(!s) return '';
+  const first = s.split('/')[0];
+  const pre = first.replace(/[\d(.].*$/,'').trim();
+  const tokens = pre.split(/\s+/).filter(Boolean);
+  if(!tokens.length) return '';
+  let name = tokens[0], i = 1;
+  while(name.length<3 && tokens[i] && tokens[i].length===1){ name += tokens[i++]; }
+  const ym = s.match(/(\d{2})(?!\d)/);
+  return name + (ym ? ym[1] : '');
+}
+function splitMembers(str){
+  return String(str==null?'':str).normalize('NFKC').replace(/、/g,',').split(/[,\n;]+/).map(normMember).filter(Boolean);
+}
+const TIME_RE = /(?:(오전|오후|AM|PM|am|pm)\s*)?(\d{1,2})\s*(?:시\s*(?:(\d{1,2})\s*분?)?|:\s*(\d{2}))/;
+function parseTimeText(str){
+  const m = str.match(TIME_RE);
+  if(!m) return null;
+  const h = parseInt(m[2],10);
+  const mi = m[3]!=null ? parseInt(m[3],10) : (m[4]!=null ? parseInt(m[4],10) : 0);
+  const ap = (m[1]||'').toLowerCase();
+  const pm = ap==='오후'||ap==='pm' ? true : (ap ? false : h>=12);
+  const h12 = h>12 ? h-12 : h;
+  return { text:`${pm?'PM':'AM'} ${pad2(h12)}시 ${pad2(mi)}분`, rest: str.slice(0,m.index)+' '+str.slice(m.index+m[0].length) };
+}
+function cleanTitle(t){ return t.trim().replace(/\s*(탑승\s*장소|탑승지|픽업\s*장소|픽업|좌석표?|참가\s*신청서?)\s*$/,'').trim(); }
+const SKIP_ITEM = /^(참석|응원|대기|게스트|차량지원|자차)/;
+function parseSheetRows(rows){
+  const out = { seats:{}, labels:{}, locs:[], cars:[], mountain:'', date:'' };
+  const head = (rows[0]||[]).map(x=>String(x==null?'':x).trim());
+  const hasHead = head.includes('항목') || head.includes('멤버');
+  const ci = (n,d)=>{ const i = head.indexOf(n); return i>=0 ? i : d; };
+  const cD = ci('작성일',0), cT = ci('제목',1), cI = ci('항목',2), cM = ci('멤버',5), cTm = ci('시간',3);
+  (hasHead ? rows.slice(1) : rows).forEach(r=>{
+    const g = i => String(r[i]==null?'':r[i]);
+    const a = g(cD), title = g(cT).trim(), item = g(cI).trim(), members = g(cM);
+    const rawT = r[cTm], timeCell = (typeof rawT==='number' && rawT>0 && rawT<1) ? (()=>{ const m = Math.round(rawT*1440); return `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}`; })() : g(cTm).trim();
+    if(a && !out.date){
+      const m = a.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+      if(m) out.date = `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+    }
+    const tt = cleanText(title);
+    if(tt && !tt.includes('좌석') && !out.mountain) out.mountain = cleanTitle(tt);
+    /* 좌석 항목: "1번", "3번(싱글석)", "1", "3(리딩자)", "16 (1인석)" */
+    const sm = item.match(/^(\d+)(?:\s*번|\s*(?=[(（])|\s*$|\s+(?=\S))/);
+    if(sm){
+      const n = parseInt(sm[1],10);
+      out.seats[n] = splitMembers(members)[0] || '';
+      const lab = item.replace(/^\d+\s*번?\s*/, '').replace(/[(（][^)）]*[)）]/g, '').trim();   /* 좌석 설명 (운전석, 2열 창문 …) */
+      if(lab) out.labels[n] = lab;
+      return;
+    }
+    const cm = item.match(/^(차량\s*지원|자차)/);
+    if(cm){ out.cars.push({ kind: cm[1].replace(/\s/g,'')==='자차' ? '자차' : '차량지원', members: splitMembers(members) }); return; }
+    /* 픽업 장소: "사당역 11번 출구 7시" / "죽전간이정류장 7시20분" / "잠실역 5번출구 07 :25" 등 */
+    let rest = item, exit = '';
+    const em = rest.match(/(\d+)\s*번\s*(출구|승강장)/);
+    if(em){ exit = `${em[1]}번 ${em[2]}`; rest = rest.slice(0,em.index)+' '+rest.slice(em.index+em[0].length); }
+    let t = parseTimeText(rest);
+    if(t) rest = t.rest;
+    else if(timeCell){ const t2 = parseTimeText(timeCell); if(t2) t = { text:t2.text, rest }; }   /* 시간 열 */
+    const name = rest.replace(/[()\[\]\-:~·]+/g,' ').replace(/\s+/g,' ').trim();
+    const placeLike = /(역|정류장|터미널|휴게소|주차장|공원|광장)$/.test(name) || /탑승/.test(title);
+    if((t || em || (placeLike && members.trim())) && /[가-힣]/.test(name) && !SKIP_ITEM.test(name)){
+      out.locs.push({ name, exit, time: t ? t.text : '', members: splitMembers(members) });
+    }
+  });
+  return out;
+}
+function importFromRowSets(rowSets){
+  const parsed = rowSets.map(parseSheetRows);
+  const seatsMap = {}, labelsMap = {}; let locs = []; let cars = []; let mountain = '', date = '';
+  parsed.forEach(p=>{
+    Object.assign(seatsMap, p.seats); Object.assign(labelsMap, p.labels||{});
+    if(p.locs.length) locs = p.locs;
+    if(p.cars && p.cars.length) cars = cars.concat(p.cars);
+    mountain = mountain || p.mountain; date = date || p.date;
+  });
+  const seatNos = Object.keys(seatsMap).map(Number).sort((a,b)=>a-b);
+  if(!seatNos.length && !locs.length) return { ok:false, msg:'좌석 또는 픽업 장소 정보를 찾지 못했어요. 파일을 확인해 주세요.' };
+
+  const palette = ['#92D14F','#FFC000','#F2CFEF','#FFFF00','#F5B7B1','#D7BDE2'];
+  if(locs.length){
+    state.locations = locs.map((l,i)=>{
+      const old = state.locations.find(o=>o.name===l.name);
+      return { name:l.name, exit:l.exit, time:l.time, color: old ? old.color : palette[i % palette.length], members:l.members };
+    });
+  }
+  const findLoc = key => {
+    if(!key) return -1;
+    return locs.findIndex(l=>l.members.includes(key));
+  };
+  let seatKeys = []; let autoBus = '';
+  if(seatNos.length){
+    const max = seatNos[seatNos.length-1];
+    state.seats = [];
+    for(let n=1;n<=max;n++){
+      const key = seatsMap[n] || '';
+      seatKeys.push(key);
+      state.seats.push({ name:key, loc: locs.length ? findLoc(key) : -1, label: labelsMap[n] || '' });
+    }
+    document.getElementById('seat-total').value = max;
+    /* 20석이면 20인승 프리미엄 배치, 아니면 일반 배치로 자동 전환 */
+    const wantType = max===20 ? 'premium20' : (max===19 ? 'county20' : (max===15 ? 'solati15' : (max===45 ? 'bus45' : 'standard')));
+    if(state.busType !== wantType){ state.busType = wantType; state.stdBackup = null; autoBus = wantType; }
+    if(BUS_FIXED[wantType]) document.getElementById('seat-per-row').value = BUS_FIXED[wantType].per;
+    syncBusTypeUI();
+  } else {
+    seatKeys = state.seats.map(s=>normMember(s.name));
+    if(locs.length){ state.seats.forEach(s=>{ s.loc = findLoc(normMember(s.name)); }); }
+  }
+  if(mountain){ state.mountain = mountain; document.getElementById('mountain').value = mountain; }
+  if(date){ state.date = date; document.getElementById('ev-date').value = date; }
+  renderSeatTab();
+
+  /* 자차 · 차량지원 (이미 있는 이름은 건너뛰고 새 이름만 추가) */
+  let carAdded = 0;
+  cars.forEach(c=>c.members.forEach(n=>{
+    if(!state.cars.some(x=>x.name===n && x.kind===c.kind)){ state.cars.push({ kind:c.kind, name:n, plate:'', count:'', note:'' }); carAdded++; }
+  }));
+  if(carAdded){ renderCars(); document.getElementById('live-seat-sheet').innerHTML = buildSeatSheetHTML(); saveState(); }
+
+  /* 개인별 정산 명단: 좌석표 이름(좌석 순서) + 신청서 명단의 나머지 분 */
+  const roster = [];
+  const addRoster = n => { if(n && !roster.includes(n)) roster.push(n); };
+  if(seatNos.length) seatKeys.forEach(addRoster);
+  locs.forEach(l=>l.members.forEach(addRoster));
+  let rosterCount = 0, rosterNote = '';
+  if(roster.length){
+    const oldPeople = new Map(state.people.map(pp=>[pp.name, pp]));
+    if(state.busList.length>1){
+      let added = 0;
+      roster.forEach(n=>{ if(!oldPeople.has(n)){ state.people.push({ name:n, dish:-1, drink:1900, other:0 }); added++; } });
+      rosterNote = `<b>개인별 식대 정산(자동)</b> 명단에 새 이름 ${added}명을 추가했어요 (여러 호차라서 기존 명단은 그대로 둬요).`;
+    } else {
+      state.people = roster.map(n=> oldPeople.has(n) ? { ...oldPeople.get(n) } : { name:n, dish:-1, drink:1900, other:0 });
+      rosterNote = `<b>개인별 식대 정산(자동)</b> 명단에 ${roster.length}명을 넣었어요 (좌석표와 같은 이름 형식). 이름이 같은 분의 기존 식대·주류 입력은 그대로 유지돼요.`;
+    }
+    rosterCount = roster.length;
+    renderPeople(); saveState();
+  }
+
+  const seated = new Set(seatKeys.filter(Boolean));
+  const noSeat = [];
+  locs.forEach(l=>l.members.forEach(m=>{ if(!seated.has(m) && !noSeat.includes(m)) noSeat.push(m); }));
+  const unmatched = state.seats.map((s,i)=>({s,i})).filter(o=>o.s.name && o.s.loc===-1).map(o=>`${o.i+1}번 ${o.s.name}`);
+  const counts = state.locations.map((l,i)=>`${l.name} ${state.seats.filter(s=>s.loc===i).length}명`).join(' · ');
+  let msg = `✅ 좌석 ${state.seats.length}석${locs.length ? `, 픽업 장소 ${state.locations.length}곳` : ''}을 불러왔어요.${locs.length ? '<br>'+counts : ''}`;
+  if(rosterCount) msg += `<br>🍽️ ${rosterNote}`;
+  if(carAdded) msg += `<br>🚗 자차·차량지원 ${carAdded}명을 <b>자차 정보</b>에 추가했어요. 차량번호·비고는 직접 입력해 주세요.`;
+  if(locs.length && locs.some(l=>!l.time)) msg += `<br>🕖 탑승 시간이 파일에 없어요. 픽업 장소 카드에서 시간을 입력해 주세요.`;
+  if(autoBus==='county20') msg += `<br>🚌 좌석이 19석이라 <b>카운티 중형</b>(승객 19석 + 운전석) 배치로 바꿨어요.`;
+  if(autoBus==='bus45') msg += `<br>🚌 좌석이 45석이라 <b>일반 버스 45승</b>(2+2 배치)으로 바꿨어요.`;
+  if(autoBus==='solati15') msg += `<br>🚐 좌석이 15석이라 <b>솔라티 15인승</b> 배치로 바꿨어요.`;
+  {
+    const cnt = {}; seatKeys.forEach((k,i)=>{ if(k){ (cnt[k] = cnt[k] || []).push(i+1); } });
+    const dup = Object.keys(cnt).filter(k=>cnt[k].length>1).map(k=>`${k} (${cnt[k].join('번, ')}번)`);
+    if(dup.length) msg += `<br>⚠️ 같은 분이 여러 좌석에 있어요: ${dup.join(', ')} — 엑셀을 확인해 주세요.`;
+  }
+  if(autoBus==='premium20') msg += `<br>🚌 좌석이 20석이라 <b>20인승 프리미엄</b> 배치로 바꿨어요.`;
+  else if(autoBus==='standard') msg += `<br>🚌 좌석이 ${state.seats.length}석이라 <b>일반 버스</b> 배치로 바꿨어요.`;
+  if(date) msg += `<br>📅 날짜는 엑셀의 작성일(${date}) 기준으로 넣었어요. 행사일과 다르면 위 날짜 칸에서 고쳐 주세요.`;
+  if(noSeat.length) msg += `<br>ℹ️ 신청 명단엔 있지만 버스 좌석이 없는 분: ${noSeat.join(', ')} (차량지원·자차 등)`;
+  const named = state.seats.filter(s=>s.name).length;
+  if(!seatNos.length && locs.length && named && unmatched.length > named/2){
+    msg += `<br>⚠️ 현재 좌석표 ${named}명 중 ${named-unmatched.length}명만 이 탑승지 엑셀과 일치해요. 다른 행사의 좌석표라면 좌석 엑셀도 함께 올려 주세요.`;
+  } else if(unmatched.length && locs.length) msg += `<br>⚠️ 픽업 장소를 못 찾은 좌석: ${unmatched.join(', ')} → 아래 좌석 배정에서 직접 선택해 주세요.`;
+  if(!seatNos.length) msg += `<br>ℹ️ 좌석 파일 없이 불러와서, 현재 좌석표의 이름과 대조해 픽업 장소만 다시 연결했어요.`;
+  if(!locs.length) msg += `<br>⚠️ 탑승지 엑셀 파일이 없어서 픽업 장소 연결은 하지 못했어요.`;
+  return { ok:true, msg };
+}
+async function handleXlInput(ev){
+  const files = Array.from(ev.target.files||[]);
+  const st = document.getElementById(ev.target.dataset.status || 'xl-import-status');
+  if(!files.length) return;
+  if(typeof XLSX==='undefined'){ st.textContent = '엑셀 읽기 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'; return; }
+  st.textContent = '읽는 중...';
+  try{
+    const rowSets = [];
+    for(const f of files){
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf, { type:'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rowSets.push(XLSX.utils.sheet_to_json(ws, { header:1, defval:'' }));
+    }
+    const bi = ev.target.dataset.bus;
+    if(bi!==undefined) switchBus(parseInt(bi,10));
+    const res = importFromRowSets(rowSets);
+    const multi = state.busList.length>1;
+    st.innerHTML = (multi ? `<b>🚌 ${escapeHtml(state.busList[state.activeBus].name)}</b><br>` : '') + res.msg;
+    renderBusTabs();
+  }catch(e){ st.textContent = '파일을 읽지 못했어요. 엑셀(.xlsx) 파일이 맞는지 확인해 주세요.'; }
+  ev.target.value = '';
+}
+document.getElementById('pickup-import-input').addEventListener('change', handleXlInput);
+
+/* ===== 영수증 첨부 ===== */
+const RECEIPT_MAX = 6;
+function shrinkImage(file, maxW){
+  return new Promise((resolve,reject)=>{
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const r = Math.min(1, maxW/img.width), c = document.createElement('canvas');
+        c.width = Math.max(1,Math.round(img.width*r)); c.height = Math.max(1,Math.round(img.height*r));
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+        resolve(c.toDataURL('image/jpeg', 0.78));
+      };
+      img.onerror = reject; img.src = rd.result;
+    };
+    rd.onerror = reject; rd.readAsDataURL(file);
+  });
+}
+function rcList(key){ if(key==='bus') return state.receipts.bus; if(key==='lodge'){ if(!Array.isArray(state.receipts.lodge)) state.receipts.lodge = []; return state.receipts.lodge; } if(key==='dutch'){ if(!Array.isArray(state.receipts.dutch)) state.receipts.dutch = []; return state.receipts.dutch; } const L = activeCar(); return L ? L.receipts : []; }
+function renderReceipts(key){
+  const box = document.getElementById('receipt-list-'+key); box.innerHTML = '';
+  rcList(key).forEach((src,i)=>{
+    const w = document.createElement('div'); w.className = 'rc-item';
+    const im = document.createElement('img'); im.src = src; im.alt = `영수증 ${i+1}`;
+    const x = document.createElement('button'); x.className = 'rc-x'; x.textContent = '×'; x.setAttribute('aria-label','영수증 삭제');
+    x.addEventListener('click', ()=>{ rcList(key).splice(i,1); renderReceipts(key); saveState(); });
+    w.append(im,x); box.appendChild(w);
+  });
+  const n = rcList(key).length;
+  document.getElementById('receipt-status-'+key).textContent = n ? `${n}장 첨부됨 · ${key==='dutch' ? '더치페이' : '정산내역'} 이미지 오른쪽에 들어가요.` + (storageFull ? ' (저장 공간이 부족해서 새로고침하면 사라질 수 있어요)' : '') : '';
+}
+async function addReceipts(key, files){
+  const st = document.getElementById('receipt-status-'+key);
+  let skipped = 0;
+  for(const f of files){
+    if(!/^image\//.test(f.type)) { skipped++; continue; }
+    if(rcList(key).length >= RECEIPT_MAX){ skipped++; continue; }
+    try{ rcList(key).push(await shrinkImage(f, 800)); }catch(e){ skipped++; }
+  }
+  saveState(); renderReceipts(key);
+  if(skipped) st.textContent += ` (${skipped}장은 건너뛰었어요 · 이미지 파일만, 최대 ${RECEIPT_MAX}장)`;
+}
+/* ===== 좌석 배정 한꺼번에 입력 ===== */
+function seatLocByName(name){
+  const key = normMember(name); if(!key) return -1;
+  const hasYear = /\d{2}$/.test(key);
+  return state.locations.findIndex(l=>Array.isArray(l.members) && l.members.some(m=> hasYear ? m===key : nameOnly(m)===key));
+}
+function seatBulkLoad(){
+  document.getElementById('seat-bulk-text').value = state.seats.map((s,i)=>`${i+1} ${s.name || '-'}`).join('\n');
+  document.getElementById('seat-bulk-status').textContent = '현재 배정을 불러왔어요. 고친 뒤 "좌석에 적용"을 눌러 주세요.';
+}
+function seatBulkApply(){
+  const ta = document.getElementById('seat-bulk-text'), st = document.getElementById('seat-bulk-status');
+  const tokens = String(ta.value||'').split(/[\n,，;]+/).map(s=>s.trim()).filter(Boolean);
+  if(!tokens.length){ st.textContent = '입력된 내용이 없어요.'; return; }
+  const EMPTY = /^(-|–|—|x|X|공석|빈자리|빈좌석|없음)$/;
+  const total = state.seats.length, bad = [];
+  let next = 1, done = 0;
+  tokens.forEach(t=>{
+    const m = t.match(/^(\d{1,3})\s*(?:번|[.):])?\s*(.*)$/);
+    let n, name;
+    if(m){ n = parseInt(m[1],10); name = m[2].trim(); } else { n = next; name = t; }
+    next = n + 1;
+    if(EMPTY.test(name)) name = '';
+    if(n<1 || n>total){ bad.push(String(n)); return; }
+    const s = state.seats[n-1];
+    if(s.name !== name){ s.name = name; s.loc = name ? seatLocByName(name) : -1; }
+    done++;
+  });
+  renderSeatTab(); saveState();
+  st.textContent = `${done}석을 반영했어요.` + (bad.length ? ` 좌석 번호가 범위(1~${total})를 벗어난 항목은 건너뛰었어요: ${bad.join(', ')}` : '');
+}
+function initSeatBulk(){
+  document.getElementById('seat-bulk-toggle').addEventListener('click', ()=>{
+    const box = document.getElementById('seat-bulk'), open = box.style.display==='none';
+    box.style.display = open ? '' : 'none';
+    if(open && !document.getElementById('seat-bulk-text').value.trim()) seatBulkLoad();
+  });
+  document.getElementById('seat-bulk-load').addEventListener('click', seatBulkLoad);
+  document.getElementById('seat-bulk-apply').addEventListener('click', seatBulkApply);
+}
+/* ===== 종합 정산 ===== */
+function stRound(x, mode){
+  if(mode==='ceil10') return Math.ceil(x/10 - 1e-9) * 10;
+  if(mode==='round') return Math.round(x);
+  return Math.floor(x + 1e-9);
+}
+function stMatch(p, tok){
+  tok = String(tok||'').trim(); if(!tok) return false;
+  if(p.tag && p.tag === tok) return true;
+  const key = normMember(tok); if(!key) return false;
+  return /\d{2}$/.test(key) ? normMember(p.name)===key : nameOnly(p.name)===key;
+}
+function stCalc(){
+  const S = state.settle;
+  const people = S.people.map(p=>({ name:String(p.name||'').trim(), tag:String(p.tag||'').trim(), prepaid:p.prepaid })).filter(p=>p.name);
+  const items = S.items.filter(it=>String(it.name||'').trim() || num(it.total)>0).map(it=>{
+    const total = num(it.total), ex = splitNames(it.exclude);
+    const fx = splitNames(String(it.fixed||'').replace(/(\d),(?=\d{3}\b)/g,'$1')).map(t=>{ const m = t.match(/^(.+?)\s*[=:]\s*(\d+)$/); return m ? { tok:m[1].trim(), amt:num(m[2]) } : null; }).filter(Boolean);
+    const excl = people.map(p=>ex.some(t=>stMatch(p,t)));
+    const fixed = people.map((p,i)=>{ if(excl[i]) return null; const f = fx.find(x=>stMatch(p,x.tok)); return f ? f.amt : null; });
+    const payers = people.filter((p,i)=>!excl[i] && fixed[i]===null).length;
+    const fixedSum = fixed.reduce((s,v)=>s+(v||0),0);
+    const per = payers>0 ? stRound(Math.max(0, total-fixedSum)/payers, it.round) : 0;
+    const cells = people.map((p,i)=> excl[i] ? null : (fixed[i]!==null ? fixed[i] : per));
+    return { name:String(it.name||'').trim(), group:String(it.group||'').trim(), total, prepaid:!!it.prepaid, per, payers, cells, sum:cells.reduce((s,v)=>s+(v||0),0) };
+  });
+  const rows = people.map((p,i)=>{
+    const total = items.reduce((s,it)=>s+(it.cells[i]||0),0);
+    const auto = items.reduce((s,it)=>s+(it.prepaid ? (it.cells[i]||0) : 0),0);
+    const prepaid = (p.prepaid!=='' && p.prepaid!=null) ? num(p.prepaid) : auto;
+    return { p, total, prepaid, deposit: total - prepaid };
+  });
+  return { people, items, rows, grand:{ entered:items.reduce((s,it)=>s+it.total,0), total:rows.reduce((s,r)=>s+r.total,0), deposit:rows.reduce((s,r)=>s+r.deposit,0) } };
+}
+function stTableHTML(c){
+  const K = KRW, items = c.items, R = c.rows, J = items.length;
+  if(!R.length || !J) return '<div style="padding:14px; color:#666; font-size:13px;">참가자와 정산 항목을 입력하면 표가 만들어져요.</div>';
+  const seg = [];
+  items.forEach((it,j)=>{ const last = seg[seg.length-1]; if(it.group && last && last.group===it.group) last.n++; else seg.push({ group:it.group, from:j, n:1 }); });
+  let h1 = '', h2 = '', h3 = '';
+  seg.forEach(s=>{
+    if(s.group){
+      h1 += `<th colspan="${s.n}">${escapeHtml(s.group)}</th>`;
+      for(let k=s.from; k<s.from+s.n; k++){ h2 += `<th>${escapeHtml(items[k].name)}</th>`; h3 += `<th class="st-tot">${K(items[k].total)}</th>`; }
+    } else {
+      const it = items[s.from];
+      h1 += `<th>${escapeHtml(it.name)}</th>`; h2 += `<th class="st-tot" rowspan="2">${K(it.total)}</th>`;
+    }
+  });
+  /* 같은 태그가 이어진 구간에서 모두 안 내는 칸은 한 칸으로 묶어요 */
+  const skip = R.map(()=>Array(J).fill(false)), merge = R.map(()=>Array(J).fill(null));
+  let i = 0;
+  while(i < R.length){
+    const tag = R[i].p.tag; if(!tag){ i++; continue; }
+    let e = i; while(e+1 < R.length && R[e+1].p.tag === tag) e++;
+    const allEx = items.map(it=>{ for(let r=i; r<=e; r++) if(it.cells[r]!==null) return false; return true; });
+    let j = 0;
+    while(j < J){
+      if(!allEx[j]){ j++; continue; }
+      let k = j; while(k+1 < J && allEx[k+1]) k++;
+      merge[i][j] = { rowspan:e-i+1, colspan:k-j+1, tag };
+      for(let r=i; r<=e; r++) for(let q=j; q<=k; q++) if(!(r===i && q===j)) skip[r][q] = true;
+      j = k+1;
+    }
+    i = e+1;
+  }
+  const body = R.map((r,ri)=>{
+    const cells = items.map((it,j)=>{
+      if(skip[ri][j]) return '';
+      const m = merge[ri][j]; if(m) return `<td class="st-tag" rowspan="${m.rowspan}" colspan="${m.colspan}">${escapeHtml(m.tag)}</td>`;
+      const v = it.cells[ri]; return v===null ? '<td class="st-dash">-</td>' : `<td>${K(v)}</td>`;
+    }).join('');
+    const dep = r.deposit===0 ? '-' : (r.deposit<0 ? `<span style="color:#C62828;">${K(r.deposit)}</span>` : K(r.deposit));
+    return `<tr class="${r.deposit===0 && r.total>0 ? 'st-hl' : ''}"><td class="st-no">${ri+1}</td><td class="st-name">${escapeHtml(r.p.name)}</td>${cells}<td class="st-sum">${K(r.total)}</td><td class="st-dep" style="text-align:${r.deposit===0?'center':'right'};">${dep}</td></tr>`;
+  }).join('');
+  const foot = `<tr class="st-foot"><td colspan="2" style="text-align:center;">합 계</td>${items.map(it=>`<td>${K(it.sum)}</td>`).join('')}<td class="st-sum">${K(c.grand.total)}</td><td class="st-dep">${K(c.grand.deposit)}</td></tr>`;
+  return `<table class="st-tbl">
+    <tr><th rowspan="3">No</th><th rowspan="3">이 름</th>${h1}<th rowspan="2" class="st-sum">정산합계</th><th rowspan="3" class="st-dep">입금해야할<br>금액</th></tr>
+    <tr>${h2}</tr>
+    <tr>${h3}<th class="st-sum st-tot">${K(c.grand.entered)}</th></tr>
+    ${body}${foot}
+  </table>`;
+}
+function settleTitle(){ return (state.settle.title||'').trim() || `${state.mountain||''} 정산내역`; }
+function buildSettleSheetHTML(){
+  const c = stCalc(), note = (state.settle.note||'').trim();
+  return `<div class="st-wrap"><div class="st-title">${escapeHtml(settleTitle())}</div>${stTableHTML(c)}${note ? `<div style="margin-top:10px; border:1px solid #333; padding:8px 10px; font-size:12px; line-height:1.6; white-space:pre-wrap; color:#111;"><b>비고</b><br>${escapeHtml(note)}</div>` : ''}</div>`;
+}
+function updateSettle(){
+  const c = stCalc();
+  const t = document.getElementById('st-table'); if(t) t.innerHTML = stTableHTML(c);
+  const warns = [];
+  c.items.forEach(it=>{
+    if(it.total>0 && it.payers===0) warns.push(`${it.name || '(이름 없음)'}: 이 항목을 내는 분이 없어요. 제외 목록을 확인해 주세요.`);
+    const diff = Math.round(it.sum - it.total);
+    if(it.total>0 && it.payers>0 && diff!==0) warns.push(`${it.name}: 계산 합계 ${KRW(it.sum)} · 입력 총금액과 ${KRW(Math.abs(diff))} ${diff>0 ? '더 걷혀요' : '모자라요'} (올림·내림 차이)`);
+  });
+  const w = document.getElementById('st-warn'); if(w) w.innerHTML = warns.map(escapeHtml).join('<br>');
+  const s = document.getElementById('st-summary');
+  if(s) s.innerHTML = `
+    <div class="summary-row exp"><span>정산 항목 총금액 합계</span><span class="v">${KRW(c.grand.entered)}</span></div>
+    <div class="summary-row inc"><span>정산합계 (참가자 ${c.rows.length}명)</span><span class="v">${KRW(c.grand.total)}</span></div>
+    <div class="summary-row total"><span>입금해야할 금액 합계</span><span class="v">${KRW(c.grand.deposit)}</span></div>`;
+  saveState();
+}
+function renderSettleItems(){
+  const box = document.getElementById('st-items'); box.innerHTML = '';
+  state.settle.items.forEach((it,i)=>{
+    const row = document.createElement('div'); row.className = 'st-item';
+    row.innerHTML = `
+      <input type="text" placeholder="항목명 (예: 숙박비)" value="${escapeHtml(it.name||'')}" data-i="${i}" data-f="name">
+      <input class="num-in money" type="text" inputmode="numeric" placeholder="총금액" value="${it.total===''||it.total==null ? '' : escapeHtml(it.total)}" data-i="${i}" data-f="total">
+      <button class="icon-btn" aria-label="항목 삭제" onclick="removeSettleItem(${i})">×</button>
+      <input type="text" placeholder="묶음 (예: 8/15일(토))" value="${escapeHtml(it.group||'')}" data-i="${i}" data-f="group">
+      <select class="span2" data-i="${i}" data-f="round">
+        <option value="floor" ${it.round==='floor'||!it.round?'selected':''}>1인당 내림 (1원)</option>
+        <option value="ceil10" ${it.round==='ceil10'?'selected':''}>1인당 올림 (10원)</option>
+        <option value="round" ${it.round==='round'?'selected':''}>1인당 반올림 (1원)</option>
+      </select>
+      <input class="wide" type="text" placeholder="제외할 분 · 태그 (쉼표로 구분, 예: 자차, 김경민72)" value="${escapeHtml(it.exclude||'')}" data-i="${i}" data-f="exclude">
+      <input class="wide" type="text" placeholder="고정금액 (예: 자차=20000, 김경민72=15000)" value="${escapeHtml(it.fixed||'')}" data-i="${i}" data-f="fixed">
+      <label class="chk wide" style="margin:0;"><input type="checkbox" data-i="${i}" data-f="prepaid" ${it.prepaid?'checked':''}> 선납 항목 (미리 받은 금액 · 입금해야할 금액에서 빼요)</label>`;
+    row.querySelectorAll('input,select').forEach(el=>{
+      const ev = el.type==='checkbox' || el.tagName==='SELECT' ? 'change' : 'input';
+      el.addEventListener(ev, e=>{
+        const {i:ix,f} = e.target.dataset, t = e.target;
+        state.settle.items[ix][f] = f==='total' ? num(t.value) : (f==='prepaid' ? t.checked : t.value);
+        updateSettle();
+      });
+    });
+    box.appendChild(row);
+  });
+  updateSettle();
+}
+function addSettleItem(){ state.settle.items.push({ name:'', group:'', total:'', round:'floor', exclude:'', fixed:'', prepaid:false }); renderSettleItems(); saveState(); }
+function removeSettleItem(i){ state.settle.items.splice(i,1); renderSettleItems(); saveState(); }
+function renderSettlePeople(){
+  const box = document.getElementById('st-people'); box.innerHTML = '';
+  state.settle.people.forEach((p,i)=>{
+    const row = document.createElement('div'); row.className = 'st-person';
+    row.innerHTML = `
+      <input type="text" placeholder="이름" value="${escapeHtml(p.name||'')}" data-i="${i}" data-f="name">
+      <input type="text" placeholder="태그" value="${escapeHtml(p.tag||'')}" data-i="${i}" data-f="tag">
+      <input class="num-in money" type="text" inputmode="numeric" placeholder="선납금(자동)" value="${p.prepaid===''||p.prepaid==null ? '' : escapeHtml(p.prepaid)}" data-i="${i}" data-f="prepaid">
+      <button class="icon-btn" aria-label="삭제" onclick="removeSettlePerson(${i})">×</button>`;
+    row.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('input', e=>{
+        const {i:ix,f} = e.target.dataset, v = e.target.value;
+        state.settle.people[ix][f] = f==='prepaid' ? (String(v).trim()==='' ? '' : num(v)) : v;
+        updateSettle();
+      });
+    });
+    box.appendChild(row);
+  });
+  updateSettle();
+}
+function addSettlePerson(){ state.settle.people.push({ name:'', tag:'', prepaid:'' }); renderSettlePeople(); saveState(); }
+function removeSettlePerson(i){ state.settle.people.splice(i,1); renderSettlePeople(); saveState(); }
+function addSettleNames(names){
+  const have = new Set(state.settle.people.map(p=>(p.name||'').trim()));
+  let n = 0;
+  names.forEach(nm=>{ nm = String(nm||'').trim(); if(nm && !have.has(nm)){ have.add(nm); state.settle.people.push({ name:nm, tag:'', prepaid:'' }); n++; } });
+  return n;
+}
+function settleFromPeople(){
+  const own = new Set(state.cars.filter(c=>c.kind==='자차').map(c=>normMember(c.name)));
+  const before = state.settle.people.length;
+  const n = addSettleNames(state.people.map(p=>p.name));
+  state.settle.people.slice(before).forEach(p=>{ if(own.has(normMember(p.name))) p.tag = '자차'; });
+  renderSettlePeople(); saveState();
+  document.getElementById('st-sample-status').textContent = n ? `개인별 명단에서 ${n}명을 불러왔어요 (자차 정보에 있는 분은 태그가 자차로 들어가요).` : '새로 불러올 이름이 없어요.';
+}
+function settleSample(){
+  const names = Array.from({length:32}, (_,i)=>`참가자${String(i+1).padStart(2,'0')}`);
+  state.settle.people = names.map((n,i)=>({ name:n, tag: i>=28 ? '자차' : '', prepaid: i>=28 ? 0 : '' }));
+  state.settle.items = [
+    { name:'쏠라티2대', group:'', total:1300000, round:'floor',  exclude:'자차, 참가자12, 참가자22', fixed:'', prepaid:true },
+    { name:'숙박비',     group:'', total:680000,  round:'floor',  exclude:'', fixed:'자차=20000', prepaid:true },
+    { name:'유류대(쏠라티2대)', group:'', total:380000, round:'ceil10', exclude:'자차, 참가자27, 참가자28', fixed:'', prepaid:false },
+    { name:'통행료(쏠라티2대)', group:'', total:49200,  round:'ceil10', exclude:'자차, 참가자27, 참가자28', fixed:'', prepaid:false },
+    { name:'정갈비', group:'8/15일(토)', total:1197000, round:'floor',  exclude:'참가자27, 참가자28', fixed:'', prepaid:false },
+    { name:'마트',   group:'8/15일(토)', total:60600,   round:'floor',  exclude:'참가자27, 참가자28', fixed:'', prepaid:false },
+    { name:'아침이네', group:'8/16일(일)', total:609000, round:'floor',  exclude:'참가자27, 참가자28', fixed:'', prepaid:false },
+    { name:'투썸',   group:'8/16일(일)', total:202100,  round:'ceil10', exclude:'참가자27, 참가자28', fixed:'', prepaid:false }
+  ];
+  state.settle.title = '예시 정산내역';
+  document.getElementById('st-title').value = state.settle.title;
+  renderSettleItems(); renderSettlePeople(); saveState();
+  document.getElementById('st-sample-status').textContent = '예시 데이터로 채웠어요 (가상의 이름 32명). 이름과 금액을 바꿔서 쓰세요.';
+}
+function initSettle(){
+  const $ = id=>document.getElementById(id), S = state.settle;
+  $('st-title').value = S.title||''; $('st-note').value = S.note||'';
+  $('st-title').addEventListener('input', e=>{ state.settle.title = e.target.value; saveState(); });
+  $('st-note').addEventListener('input', e=>{ state.settle.note = e.target.value; saveState(); });
+  $('st-sample').addEventListener('click', settleSample);
+  $('st-from-people').addEventListener('click', settleFromPeople);
+  $('st-paste-add').addEventListener('click', ()=>{
+    const names = String($('st-paste').value||'').split(/[\n,，、\t]+/);
+    const n = addSettleNames(names); $('st-paste').value = ''; renderSettlePeople(); saveState();
+    $('st-sample-status').textContent = n ? `${n}명을 추가했어요.` : '추가할 새 이름이 없어요.';
+  });
+  renderSettleItems(); renderSettlePeople();
+}
+/* ===== 숙박 ===== */
+function nightsOf(a,b){
+  if(!a || !b) return 0;
+  const d = Math.round((new Date(b) - new Date(a)) / 86400000);
+  return d > 0 ? d : 0;
+}
+function lodgeCalc(){
+  const L = state.lodge;
+  const rooms = L.rooms.map((r,i)=>{
+    const names = splitNames(r.members), price = num(r.price), n = names.length;
+    return { i, name:(r.name||'').trim() || `방 ${i+1}`, price, names, n, per: n>0 ? price/n : 0 };
+  });
+  const total = rooms.reduce((s,r)=>s+r.price,0), people = rooms.reduce((s,r)=>s+r.n,0);
+  return { rooms, total, people, avg: people>0 ? total/people : 0 };
+}
+function renderLodgeRooms(){
+  const box = document.getElementById('lg-room-list'); box.innerHTML = '';
+  state.lodge.rooms.forEach((r,i)=>{
+    const row = document.createElement('div'); row.className = 'lodge-row';
+    row.innerHTML = `
+      <input type="text" placeholder="방 이름 (예: 101호)" value="${escapeHtml(r.name||'')}" data-i="${i}" data-f="name">
+      <input class="num-in money" type="text" inputmode="numeric" placeholder="방 금액" value="${r.price===''||r.price==null ? '' : escapeHtml(r.price)}" data-i="${i}" data-f="price">
+      <button class="icon-btn" aria-label="방 삭제" onclick="removeLodgeRoom(${i})">×</button>
+      <input class="wide" type="text" list="nd-names" autocomplete="off" placeholder="묵는 분 이름 (쉼표로 구분, 예: 이연옥76, 김병중74)" value="${escapeHtml(r.members||'')}" data-i="${i}" data-f="members">
+      <div class="lodge-info"></div>`;
+    row.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('input', ev=>{
+        const {i:ix,f} = ev.target.dataset;
+        state.lodge.rooms[ix][f] = f==='price' ? num(ev.target.value) : ev.target.value;
+        updateLodge();
+      });
+    });
+    box.appendChild(row);
+  });
+  updateLodge();
+}
+function addLodgeRoom(){ state.lodge.rooms.push({ name:'', price:'', members:'' }); renderLodgeRooms(); saveState(); }
+function removeLodgeRoom(i){ if(state.lodge.rooms.length<=1){ state.lodge.rooms[0] = { name:'', price:'', members:'' }; } else state.lodge.rooms.splice(i,1); renderLodgeRooms(); saveState(); }
+function updateLodge(){
+  const L = state.lodge, c = lodgeCalc();
+  document.querySelectorAll('#lg-room-list .lodge-info').forEach((el,i)=>{
+    const r = c.rooms[i]; if(!r) return;
+    el.textContent = r.n>0 ? `${r.n}명 · 1인 ${KRW(Math.round(r.per))}` : (r.price>0 ? '묵는 분 이름을 입력해 주세요.' : '');
+  });
+  const body = document.getElementById('lg-people-body'); body.innerHTML = '';
+  let sum = 0;
+  c.rooms.forEach(r=>r.names.forEach(n=>{
+    const amt = Math.round(r.per); sum += amt;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="name-cell">${escapeHtml(n)}</td><td>${escapeHtml(r.name)}</td><td class="num">${KRW(amt)}</td>`;
+    body.appendChild(tr);
+  }));
+  if(!body.children.length){ const tr = document.createElement('tr'); tr.innerHTML = '<td colspan="3" style="color:var(--ink-soft);">방마다 묵는 분 이름을 입력하면 여기에 정리돼요.</td>'; body.appendChild(tr); }
+  /* 경고: 두 방에 같은 사람 / 방이 없는 명단 */
+  const warns = [], seen = new Map();
+  c.rooms.forEach(r=>r.names.forEach(n=>{ const k = normMember(n) || n; if(seen.has(k) && seen.get(k)!==r.name) warns.push(`${n}: ${seen.get(k)}과(와) ${r.name}에 중복이에요.`); else seen.set(k, r.name); }));
+  const assigned = new Set();
+  c.rooms.forEach(r=>r.names.forEach(t=>{
+    const key = normMember(t); if(!key) return; const hasYear = /\d{2}$/.test(key);
+    state.people.forEach((pp,ix)=>{ if(hasYear ? normMember(pp.name)===key : nameOnly(pp.name)===key) assigned.add(ix); });
+  }));
+  const free = state.people.filter((pp,ix)=>(pp.name||'').trim() && !assigned.has(ix)).map(pp=>pp.name.trim());
+  if(c.people>0 && state.people.length && free.length) warns.push(`개인별 명단 중 방이 없는 분 ${free.length}명: ${free.slice(0,12).join(', ')}${free.length>12 ? ' …' : ''}`);
+  document.getElementById('lg-warn').innerHTML = warns.map(escapeHtml).join('<br>');
+  document.getElementById('lg-summary').innerHTML = `
+    <div class="summary-row exp"><span>총 숙박비 (${c.rooms.filter(r=>r.price>0).length}개 방)</span><span class="v">${KRW(c.total)}</span></div>
+    <div class="summary-row inc"><span>숙박 인원</span><span class="v">${c.people}명</span></div>
+    <div class="summary-row total"><span>1인 평균 숙박비</span><span class="v">${KRW(Math.round(c.avg))}</span></div>`;
+  const nt = nightsOf(L.checkin, L.checkout);
+  document.getElementById('lg-nights').textContent = nt ? `${nt}박 ${nt+1}일` : '';
+  saveState();
+}
+function lodgeRangeText(){
+  const L = state.lodge, nt = nightsOf(L.checkin, L.checkout);
+  const f = d => { const m = String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${+m[2]}/${+m[3]}` : ''; };
+  return L.checkin && L.checkout ? `${f(L.checkin)}~${f(L.checkout)}${nt ? ` (${nt}박 ${nt+1}일)` : ''}` : '';
+}
+function buildLodgeSheetHTML(){
+  const L = state.lodge, c = lodgeCalc();
+  const rows = c.rooms.filter(r=>r.price>0 || r.n>0 || (L.rooms.length===1)).map(r=>`
+    <tr><td class="lg-inc-l">${escapeHtml(r.name)}</td><td>${r.n ? escapeHtml(r.names.join(', ')) : '-'}</td><td class="num">${r.n ? r.n+'명' : '-'}</td><td class="num">${r.n ? KRW(Math.round(r.per)) : '-'}</td><td class="num">${KRW(r.price)}</td></tr>`).join('');
+  const sub = [escapeHtml((L.name||'').trim()), lodgeRangeText(), '(단위:원)'].filter(Boolean).join(' · ');
+  const contact = (L.contact||'').trim() ? `<div style="margin-top:8px; font-size:12px; color:#444;">📍 ${escapeHtml(L.contact.trim())}</div>` : '';
+  const note = (L.note||'').trim() ? `<div style="margin-top:10px; border:1px solid #333; padding:8px 10px; font-size:12px; line-height:1.6; white-space:pre-wrap;"><b>비고</b><br>${escapeHtml(L.note.trim())}</div>` : '';
+  return `
+    <div class="sheet-head">
+      <div class="htitle">🏨 ${escapeHtml(state.mountain||'')} 숙박 정산내역</div>
+      <div class="hsub">${sub}</div>
+    </div>
+    <table class="lg">
+      <colgroup><col style="width:16%"><col><col style="width:10%"><col style="width:16%"><col style="width:17%"></colgroup>
+      <tr><th>방</th><th>묵는 분</th><th>인원</th><th>1인당</th><th>방 금액</th></tr>
+      ${rows}
+      <tr class="lg-grand"><td colspan="2">합계 (1인 평균 ${KRW(Math.round(c.avg))})</td><td class="num lg-red">${c.people}명</td><td class="num lg-red">${KRW(Math.round(c.avg))}</td><td class="num lg-red">${KRW(c.total)}</td></tr>
+    </table>
+    ${contact}${note}`;
+}
+function initLodge(){
+  const $ = id=>document.getElementById(id), L = state.lodge;
+  $('lg-name').value = L.name||''; $('lg-in').value = L.checkin||''; $('lg-out').value = L.checkout||''; $('lg-contact').value = L.contact||''; $('lg-note').value = L.note||'';
+  [['lg-name','name'],['lg-in','checkin'],['lg-out','checkout'],['lg-contact','contact'],['lg-note','note']].forEach(([id,f])=>{
+    $(id).addEventListener('input', e=>{ state.lodge[f] = e.target.value; updateLodge(); });
+  });
+  if(!Array.isArray(L.rooms) || !L.rooms.length) L.rooms = [{ name:'', price:'', members:'' }];
+  renderLodgeRooms();
+}
+function initReceipts(){
+  ['bus','car','dutch','lodge'].forEach(key=>{
+    const inp = document.getElementById('receipt-input-'+key);
+    inp.addEventListener('change', async e=>{ const files = Array.from(e.target.files||[]); e.target.value = ''; if(files.length) await addReceipts(key, files); });
+    renderReceipts(key);
+  });
+}
+
+/* ===== 자차 정산내역 (정산내역 탭 위쪽의 탭 바에서 + 자차 추가로 만들어요) ===== */
+function splitNames(s){ return String(s||'').split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean); }
+function updateCarLedgerTotals(){
+  if(!activeCar()) return;
+  const c = carLedgerCalc();
+  document.getElementById('cl-income').textContent = KRW(c.income);
+  document.getElementById('cl-expense').textContent = KRW(c.expense);
+  document.getElementById('cl-balance').textContent = KRW(c.balance);
+  saveState();
+}
+function renderCarExpenses(){
+  const box = document.getElementById('cl-expense-list'); box.innerHTML = '';
+  const L = activeCar(); if(!L) return;
+  L.expenses.forEach((e,i)=>{
+    const row = document.createElement('div'); row.className = 'car-row';
+    row.innerHTML = `
+      <input type="text" placeholder="구분" value="${escapeHtml(e.kind||'차량지원비')}" data-i="${i}" data-f="kind">
+      <input type="text" placeholder="받는 분 (예: 임상현)" value="${escapeHtml(e.name||'')}" data-i="${i}" data-f="name">
+      <button class="icon-btn" aria-label="삭제" onclick="removeCarExpense(${i})">×</button>
+      <input class="c2 money" type="text" inputmode="numeric" placeholder="톨비" value="${e.toll||''}" data-i="${i}" data-f="toll">
+      <input class="wide money" type="text" inputmode="numeric" placeholder="주유비" value="${e.fuel||''}" data-i="${i}" data-f="fuel">
+      <input class="c2 money" type="text" inputmode="numeric" placeholder="기타 금액" value="${e.other||''}" data-i="${i}" data-f="other">
+      <input class="wide" type="text" placeholder="기타 항목명 (예: 주차비)" value="${escapeHtml(e.otherLabel||'')}" data-i="${i}" data-f="otherLabel">`;
+    row.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('input', ev=>{
+        const {i:ix,f} = ev.target.dataset;
+        activeCar().expenses[ix][f] = (f==='toll'||f==='fuel'||f==='other') ? num(ev.target.value) : ev.target.value;
+        updateCarLedgerTotals();
+      });
+    });
+    box.appendChild(row);
+  });
+}
+function addCarExpense(){
+  if(!activeCar()) return;
+  activeCar().expenses.push({ kind:'차량지원비', name:'', toll:0, fuel:0, other:0, otherLabel:'' });
+  renderCarExpenses(); updateCarLedgerTotals();
+}
+function removeCarExpense(i){
+  if(!activeCar()) return;
+  activeCar().expenses.splice(i,1);
+  renderCarExpenses(); updateCarLedgerTotals();
+}
+function loadCarRiders(){
+  const L = activeCar(), st = document.getElementById('cl-status');
+  if(!L) return;
+  const riders = state.cars.filter(c=>c.kind==='자차' && c.name).map(c=>c.name);
+  const drivers = state.cars.filter(c=>c.kind==='차량지원' && c.name).map(c=>c.name);
+  if(!riders.length && !drivers.length){ st.textContent = '좌석표 탭의 "자차 · 차량지원 정보"에 입력된 분이 없어요.'; return; }
+  if(riders.length){
+    L.riders = riders.join(', '); L.count = riders.length;
+    document.getElementById('cl-riders').value = L.riders; document.getElementById('cl-count').value = L.count;
+  }
+  let added = 0;
+  drivers.forEach(n=>{ if(!L.expenses.some(e=>e.name===n)){ L.expenses.push({ kind:'차량지원비', name:n, toll:0, fuel:0, other:0, otherLabel:'' }); added++; } });
+  renderCarExpenses(); updateCarLedgerTotals();
+  st.textContent = `자차 탑승자 ${riders.length}명${added ? `, 차량지원 ${added}명(지출 줄)` : ''}을 불러왔어요. 톨비·주유비 금액을 입력해 주세요.`;
+}
+/* 선택된 자차 탭의 값을 입력칸에 채워요 */
+function bindCarForm(){
+  const L = activeCar(); if(!L) return;
+  const $ = id=>document.getElementById(id);
+  $('cl-heading').textContent = `🚗 ${L.name} 정산내역`;
+  $('cl-unit').value = L.unitPrice; $('cl-count').value = L.count; $('cl-riders').value = L.riders||''; $('cl-label').value = L.balanceLabel||'';
+  $('cl-status').textContent = '';
+  refreshMoney();
+  renderCarExpenses(); updateCarLedgerTotals(); renderReceipts('car');
+}
+function initCarLedger(){
+  const $ = id=>document.getElementById(id);
+  $('cl-unit').addEventListener('input', e=>{ if(!activeCar()) return; activeCar().unitPrice = num(e.target.value); updateCarLedgerTotals(); });
+  $('cl-count').addEventListener('input', e=>{ if(!activeCar()) return; activeCar().count = e.target.value==='' ? '' : num(e.target.value); updateCarLedgerTotals(); });
+  $('cl-riders').addEventListener('input', e=>{
+    const L = activeCar(); if(!L) return;
+    L.riders = e.target.value;
+    const n = splitNames(e.target.value).length;
+    if(n){ L.count = n; $('cl-count').value = n; }
+    updateCarLedgerTotals();
+  });
+  $('cl-label').addEventListener('input', e=>{ if(!activeCar()) return; activeCar().balanceLabel = e.target.value; saveState(); });
+  bindCarForm();
+}
+
+/* ===== 정산내역 탭 바 (🚌 버스비 · 🚗 자차 …) ===== */
+function renderLedgerTabs(){
+  const box = document.getElementById('ledger-tabs');
+  box.innerHTML = '';
+  const mk = (label, active, onPick, onRename, onDel, delTitle)=>{
+    const wrap = document.createElement('span');
+    wrap.className = 'bus-tab-wrap' + (active ? ' active' : '');
+    const btn = document.createElement('button');
+    btn.className = 'bus-tab'; btn.textContent = label;
+    if(onRename) btn.title = '더블클릭: 이름 변경';
+    btn.addEventListener('click', onPick);
+    if(onRename) btn.addEventListener('dblclick', onRename);
+    wrap.appendChild(btn);
+    if(onDel){
+      const x = document.createElement('button');
+      x.className = 'bus-x'; x.textContent = '×'; x.title = delTitle; x.setAttribute('aria-label', delTitle);
+      x.addEventListener('click', e=>{ e.stopPropagation(); onDel(); });
+      wrap.appendChild(x);
+    }
+    box.appendChild(wrap);
+  };
+  mk('🚌 버스비', state.activeLedger < 0, ()=>switchLedger(-1));
+  state.carLedgers.forEach((c,i)=>{
+    mk('🚗 ' + c.name, state.activeLedger === i, ()=>switchLedger(i), ()=>renameCarLedger(i), ()=>removeCarLedger(i), `${c.name} 삭제`);
+  });
+  const add = document.createElement('button');
+  add.className = 'bus-tab add'; add.textContent = '+ 자차 추가';
+  add.addEventListener('click', addCarLedger); box.appendChild(add);
+  const onBus = state.activeLedger < 0;
+  document.getElementById('ledger-bus-view').style.display = onBus ? '' : 'none';
+  document.getElementById('ledger-car-view').style.display = onBus ? 'none' : '';
+}
+function switchLedger(i){
+  if(i === state.activeLedger) return;
+  state.activeLedger = i;
+  renderLedgerTabs(); bindCarForm(); saveState();
+}
+function addCarLedger(){
+  const n = state.carLedgers.length + 1;
+  state.carLedgers.push({ name:`자차 ${n}`, unitPrice:36000, riders:'', count:'', expenses:[], balanceLabel:'', receipts:[] });
+  state.activeLedger = state.carLedgers.length - 1;
+  renderLedgerTabs(); bindCarForm(); saveState();
+}
+async function removeCarLedger(i){
+  const c = state.carLedgers[i]; if(!c) return;
+  if(!(await openDialog(`${c.name}의 정산 내용을 삭제할까요?`, { okText:'삭제' }))) return;
+  const wasActive = i === state.activeLedger;
+  state.carLedgers.splice(i,1);
+  state.carLedgers.forEach((x,k)=>{ if(/^자차 \d+$/.test(x.name)) x.name = `자차 ${k+1}`; });
+  if(wasActive) state.activeLedger = i - 1;
+  else if(state.activeLedger > i) state.activeLedger--;
+  renderLedgerTabs(); bindCarForm(); saveState();
+}
+async function renameCarLedger(i){
+  const v = await openDialog('자차 탭 이름', { input: state.carLedgers[i].name });
+  if(v && v.trim()){
+    state.carLedgers[i].name = v.trim();
+    renderLedgerTabs(); if(i === state.activeLedger) bindCarForm(); saveState();
+  }
+}
+
+/* ===== 더치페이 =====
+   식대: 메뉴마다 먹은 분끼리 나눠요 (먹은 인원을 비우면 전원).
+   주류는 주류 인원끼리, 음료수는 비주류 인원끼리 나눠요. */
+function dutchMenus(food, nonN, drkN){
+  const D = state.dutch;
+  if(!Array.isArray(D.menus)) D.menus = [ { name:'메뉴명 1', amount:'', non:'', drk:'' } ];
+  const hasAmt = r => num(r.amount) > 0;
+  const explicit = D.menus.filter(hasAmt).reduce((s,r)=>s+num(r.amount),0);
+  const rest = food - explicit;
+  const isBlank = v => (v==='' || v==null);
+  const sumOf = f => D.menus.reduce((s,r)=> s + (isBlank(r[f]) ? 0 : Math.max(0, num(r[f]))), 0);
+  const hasExp = f => D.menus.some(r=>!isBlank(r[f]));
+  const assignedNon = sumOf('non'), assignedDrk = sumOf('drk');
+  const expNon = hasExp('non'), expDrk = hasExp('drk');
+  const remainNon = Math.max(0, nonN - assignedNon), remainDrk = Math.max(0, drkN - assignedDrk);
+  /* 인원을 적은 메뉴가 하나라도 있으면, 비워 둔 메뉴는 그 인원을 뺀 나머지가 자동으로 들어가요 */
+  const eatNonOf = r => !isBlank(r.non) ? Math.max(0, num(r.non)) : (expNon ? remainNon : nonN);
+  const eatDrkOf = r => !isBlank(r.drk) ? Math.max(0, num(r.drk)) : (expDrk ? remainDrk : drkN);
+  let given = false;
+  let rows = D.menus.map(r=>{
+    let amount, auto;
+    if(hasAmt(r)){ amount = num(r.amount); auto = false; }
+    else if(!given){ given = true; amount = rest; auto = true; }
+    else { amount = 0; auto = true; }
+    const eatNon = eatNonOf(r), eatDrk = eatDrkOf(r), n = eatNon + eatDrk;
+    return { name:r.name, amount, auto, eatNon, eatDrk, per: n>0 ? amount/n : 0,
+      exclNon: isBlank(r.non) && expNon, exclDrk: isBlank(r.drk) && expDrk };
+  });
+  if(!rows.length){
+    const n = nonN + drkN;
+    rows = [ { name:'식대', amount:food, auto:true, eatNon:nonN, eatDrk:drkN, per: n>0 ? food/n : 0 } ];
+  }
+  return { rows, explicit, rest, hasAuto: given, assignedNon, assignedDrk };
+}
+function dutchCalc(){
+  const D = state.dutch;
+  const head = num(D.head), non = num(D.non), drk = Math.max(0, head - non), total = num(D.total);
+  const alc = D.alcohol.reduce((s,r)=>s+num(r.amount),0);
+  const drink = D.drinks.reduce((s,r)=>s+num(r.amount),0);
+  const food = total - alc - drink;
+  /* 식대 전체 제외로 표시한 분: 식대·주류·음료수 모두 빠지고, 나머지 분들이 나눠요 */
+  const exNon = Math.min(non, state.people.filter(p=>p.noFood && p.non).length);
+  const exDrk = Math.min(drk, state.people.filter(p=>p.noFood && !p.non).length);
+  const bNon = Math.max(0, non - exNon), bDrk = Math.max(0, drk - exDrk);
+  const menu = dutchMenus(food, bNon, bDrk);
+  const R = menu.rows;
+  const foodPer = R.reduce((s,m)=>s+m.per,0);
+  const alcPer = bDrk>0 ? alc/bDrk : 0;
+  const drinkPer = bNon>0 ? drink/bNon : 0;
+  const uniform = R.every(m=> m.eatNon===bNon && m.eatDrk===bDrk);
+  const warn = [];
+  if(head<=0) warn.push('식대 총인원을 입력해 주세요.');
+  if(non>head) warn.push('비주류 인원이 식대 총인원보다 많아요.');
+  if(alc>0 && bDrk<=0) warn.push('주류 금액이 있는데 주류를 내는 인원이 0명이에요.');
+  if(drink>0 && bNon<=0) warn.push('음료수 금액이 있는데 음료수를 내는 비주류 인원이 0명이에요.');
+  if(head>0 && food<0) warn.push('주류와 음료수 합계가 총금액보다 커요.');
+  if(menu.hasAuto && menu.rest<0) warn.push(`메뉴 금액 합계가 식대보다 ${KRW(-menu.rest)} 커요.`);
+  if(!menu.hasAuto && D.menus.length && Math.round(menu.explicit) !== Math.round(food)) warn.push(`메뉴 금액 합계(${KRW(menu.explicit)})가 식대(${KRW(food)})와 달라요. 한 메뉴의 금액을 비우면 나머지가 자동으로 들어가요.`);
+  if(menu.assignedNon > bNon) warn.push(`메뉴에 적은 비주류 인원 합(${menu.assignedNon}명)이 식대를 내는 비주류 ${bNon}명보다 많아요. (한 분이 여러 메뉴를 드셨다면 그대로 두셔도 돼요)`);
+  if(menu.assignedDrk > bDrk) warn.push(`메뉴에 적은 주류 인원 합(${menu.assignedDrk}명)이 식대를 내는 주류 ${bDrk}명보다 많아요. (한 분이 여러 메뉴를 드셨다면 그대로 두셔도 돼요)`);
+  R.forEach((m,i)=>{
+    const nm = m.name || `메뉴 ${i+1}`;
+    if(m.amount>0 && m.eatNon+m.eatDrk<=0) warn.push(`${nm}: 먹은 인원이 0명이에요.`);
+    if(m.eatNon>non) warn.push(`${nm}: 비주류 먹은 인원이 비주류 ${non}명보다 많아요.`);
+    if(m.eatDrk>drk) warn.push(`${nm}: 주류 먹은 인원이 주류 ${drk}명보다 많아요.`);
+  });
+  return { head, non, drk, total, alc, drink, food, menu, foodPer, alcPer, drinkPer, uniform, exNon, exDrk, bNon, bDrk,
+    nonPer: foodPer + drinkPer, drkPer: foodPer + alcPer,
+    nonTotal: R.reduce((s,m)=>s+m.eatNon*m.per,0) + drink,
+    drkTotal: R.reduce((s,m)=>s+m.eatDrk*m.per,0) + alc, warn };
+}
+/* 결과 표의 줄 (화면과 JPG가 같이 써요) */
+function dutchResultRows(c){
+  const rows = [], K = KRW, R = c.menu.rows, nm = (m,i)=> m.name || `메뉴 ${i+1}`;
+  rows.push({ label:'인원', a:`${c.non}명${c.exNon ? ` (전체 제외 ${c.exNon}명)` : ''}`, b:`${c.drk}명${c.exDrk ? ` (전체 제외 ${c.exDrk}명)` : ''}` });
+  const nn = nonNames();
+  if(nn.length) rows.push({ label:'비주류 이름', a:escapeHtml(nn.join(', ')), b:'그 외 전원' });
+  if(c.uniform){
+    if(R.length>1) R.forEach((m,i)=>rows.push({ label:`${nm(m,i)} 1인당`, a:K(m.per), b:K(m.per) }));
+    rows.push({ label:'식대 1인당', a:K(c.foodPer), b:K(c.foodPer) });
+    rows.push({ label:'음료수 · 주류 1인당', a:K(c.drinkPer), b:K(c.alcPer) });
+    rows.push({ label:'1인당 합계', a:K(c.nonPer), b:K(c.drkPer), strong:true });
+  } else {
+    R.forEach((m,i)=>rows.push({ label:`${nm(m,i)} 식대 1인당 (${m.eatNon+m.eatDrk}명)`, a: m.eatNon>0 ? K(m.per) : '-', b: m.eatDrk>0 ? K(m.per) : '-' }));
+    rows.push({ label:'음료수 · 주류 1인당', a:K(c.drinkPer), b:K(c.alcPer) });
+    R.forEach((m,i)=>rows.push({ label:`${nm(m,i)} 먹은 분 1인당 합계`, a: m.eatNon>0 ? K(m.per+c.drinkPer) : '-', b: m.eatDrk>0 ? K(m.per+c.alcPer) : '-', strong:true }));
+    const allN = c.bNon>0 && R.every(m=>m.eatNon===c.bNon), allD = c.bDrk>0 && R.every(m=>m.eatDrk===c.bDrk);
+    if(R.length>1 && (allN || allD)) rows.push({ label:'모든 메뉴를 먹은 분 1인당 합계', a: allN ? K(c.foodPer+c.drinkPer) : '-', b: allD ? K(c.foodPer+c.alcPer) : '-', strong:true });
+  }
+  if(c.exNon || c.exDrk) rows.push({ label:'전체 제외한 분 (식대·주류·음료수 없음)', a: c.exNon ? c.exNon+'명 · 0원' : '-', b: c.exDrk ? c.exDrk+'명 · 0원' : '-' });
+  rows.push({ label:'총계', a:K(c.nonTotal), b:K(c.drkTotal) });
+  return rows;
+}
+function updateDutch(){
+  const c = dutchCalc(), $ = id=>document.getElementById(id);
+  $('dp-drk').textContent = c.drk;
+  $('dp-alc-sum').textContent = KRW(c.alc); $('dp-drk-sum').textContent = KRW(c.drink);
+  $('dp-menu-sum').textContent = KRW(c.food);
+  document.querySelectorAll('#dp-menu-list .menu-row').forEach((row,i)=>{
+    const m = c.menu.rows[i]; if(!m) return;
+    row.querySelector('input.m-amt').placeholder = m.auto ? '자동 ' + KRW(m.amount) : '금액';
+    row.querySelector('input.m-non').placeholder = m.exclNon ? `자동 ${m.eatNon}명 (나머지)` : `전원 (${m.eatNon}명)`;
+    row.querySelector('input.m-drk').placeholder = m.exclDrk ? `자동 ${m.eatDrk}명 (나머지)` : `전원 (${m.eatDrk}명)`;
+  });
+  $('dp-r-total').textContent = KRW(c.total); $('dp-r-food').textContent = KRW(c.food);
+  $('dp-r-alc').textContent = KRW(c.alc); $('dp-r-drink').textContent = KRW(c.drink);
+  $('dp-result-body').innerHTML = dutchResultRows(c).map(r=>
+    `<tr${r.strong ? ' style="font-weight:800; font-size:16px;"' : ''}><td>${escapeHtml(r.label)}</td><td class="num">${r.a}</td><td class="num">${r.b}</td></tr>`).join('');
+  $('dp-r-sum').textContent = KRW(c.nonTotal + c.drkTotal);
+  $('dp-warn').innerHTML = c.warn.map(escapeHtml).join('<br>');
+  if(state.autoDutch && document.getElementById('people-body')) renderPeople();
+  refreshDutchMessage();
+  saveState();
+}
+const DP_BOX = { menus:'dp-menu-list', alcohol:'dp-alc-list', drinks:'dp-drk-list' };
+const DP_PH = { menus:'예: 메뉴명 1', alcohol:'예: 소주', drinks:'예: 음료수' };
+function renderMenuRows(){
+  const box = document.getElementById('dp-menu-list');
+  box.innerHTML = '';
+  if(!Array.isArray(state.dutch.menus)) state.dutch.menus = [ { name:'메뉴명 1', amount:'', non:'', drk:'' } ];
+  state.dutch.menus.forEach((r,i)=>{
+    const row = document.createElement('div'); row.className = 'menu-row';
+    const cnt = v => (v==='' || v==null) ? '' : v;
+    row.innerHTML = `
+      <div class="m-f m-top"><label>메뉴명</label><input type="text" placeholder="${DP_PH.menus}" value="${escapeHtml(r.name||'')}" data-f="name"></div>
+      <button class="icon-btn" aria-label="메뉴 삭제">×</button>
+      <div class="m-f m-wide"><label>금액 (비우면 자동)</label><input class="m-amt num-in money" type="text" inputmode="numeric" placeholder="자동" value="${r.amount||''}" data-f="amount"></div>
+      <div class="m-f m-non"><label>비주류 먹은 인원</label><input class="m-non num-in" type="number" inputmode="numeric" min="0" placeholder="전원" value="${cnt(r.non)}" data-f="non"></div>
+      <div class="m-f m-drk"><label>주류 먹은 인원</label><input class="m-drk num-in" type="number" inputmode="numeric" min="0" placeholder="전원" value="${cnt(r.drk)}" data-f="drk"></div>`;
+    row.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('input', ()=>{
+        const f = el.dataset.f;
+        r[f] = f==='name' ? el.value : (el.value==='' ? '' : (f==='amount' ? num(el.value) : Math.max(0, num(el.value))));
+        updateDutch();
+      });
+    });
+    row.querySelector('button').addEventListener('click', ()=>{ state.dutch.menus.splice(i,1); renderMenuRows(); updateDutch(); });
+    box.appendChild(row);
+  });
+}
+function renderDutchRows(kind){
+  if(kind==='menus') return renderMenuRows();
+  const box = document.getElementById(DP_BOX[kind]);
+  box.innerHTML = '';
+  state.dutch[kind].forEach((r,i)=>{
+    const row = document.createElement('div'); row.className = 'loc-row';
+    row.innerHTML = `
+      <input type="text" placeholder="${DP_PH[kind]}" value="${escapeHtml(r.name||'')}" data-f="name">
+      <input class="num-in money" type="text" inputmode="numeric" placeholder="금액" style="width:130px; flex:none;" value="${r.amount||''}" data-f="amount">
+      <button class="icon-btn" aria-label="삭제">×</button>`;
+    row.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('input', ()=>{ r[el.dataset.f] = el.dataset.f==='amount' ? (el.value==='' ? '' : num(el.value)) : el.value; updateDutch(); });
+    });
+    row.querySelector('button').addEventListener('click', ()=>{ state.dutch[kind].splice(i,1); renderDutchRows(kind); updateDutch(); });
+    box.appendChild(row);
+  });
+}
+function addDutchItem(kind){
+  if(!Array.isArray(state.dutch[kind])) state.dutch[kind] = [];
+  state.dutch[kind].push(kind==='menus' ? { name:'', amount:'', non:'', drk:'' } : { name:'', amount:'' });
+  renderDutchRows(kind); updateDutch();
+  const ins = document.getElementById(DP_BOX[kind]).querySelectorAll('input[data-f="name"]');
+  if(ins.length) ins[ins.length-1].focus();
+}
+function initDutch(){
+  const D = state.dutch, $ = id=>document.getElementById(id);
+  $('dp-head').value = D.head; $('dp-non').value = D.non; $('dp-total').value = D.total; refreshMoney();
+  [['dp-head','head'],['dp-non','non'],['dp-total','total']].forEach(([id,k])=>{
+    $(id).addEventListener('input', e=>{ state.dutch[k] = e.target.value==='' ? '' : num(e.target.value); updateDutch(); });
+  });
+  $('dp-note').value = D.note || ''; $('dp-account').value = D.account || '';
+  $('dp-note').addEventListener('input', e=>{ state.dutch.note = e.target.value; refreshDutchMessage(); saveState(); });
+  $('dp-account').addEventListener('input', e=>{ state.dutch.account = e.target.value; refreshDutchMessage(); saveState(); });
+  renderDutchRows('menus'); renderDutchRows('alcohol'); renderDutchRows('drinks'); updateDutch();
+}
+/* ===== 더치페이 보내기 (단체방에 붙여 넣을 안내 문구) ===== */
+let dpMsgDirty = false;
+function buildDutchMessage(){
+  const c = dutchCalc(), D = state.dutch, K = KRW, L = [];
+  L.push(`🍻 ${state.mountain || '산행'} 더치페이 정산 안내` + (state.date ? ` · ${fmtDate(state.date)}` : ''));
+  L.push(`총금액 ${K(c.total)} (식대 ${K(c.food)} · 주류 ${K(c.alc)} · 음료수 ${K(c.drink)})`);
+  if(String(D.totalNote||'').trim()) L.push(`※ ${String(D.totalNote).trim()}`);
+  L.push('');
+  if(c.uniform){
+    L.push(`▶ 비주류 ${c.bNon}명 : 1인 ${K(c.nonPer)}`);
+    L.push(`▶ 주류 ${c.bDrk}명 : 1인 ${K(c.drkPer)}`);
+  } else {
+    /* 메뉴를 나눠 먹은 경우: 비주류·주류 각각 메뉴별 1인당 금액 (식대 + 음료수/주류)을 한 줄로 */
+    const R = c.menu.rows, mn = (m,i)=> m.name || `메뉴 ${i+1}`;
+    if(c.bNon>0) L.push(`▶ 비주류 ${c.bNon}명 : 1인 ` + R.map((m,i)=> m.eatNon>0 ? `${mn(m,i)} ${K(m.per + c.drinkPer)}` : '').filter(Boolean).join(' / '));
+    if(c.bDrk>0) L.push(`▶ 주류 ${c.bDrk}명 : 1인 ` + R.map((m,i)=> m.eatDrk>0 ? `${mn(m,i)} ${K(m.per + c.alcPer)}` : '').filter(Boolean).join(' / '));
+  }
+  const nn = nonNames();
+  if(nn.length) L.push(`※ 비주류: ${nn.join(', ')}`);
+  const nf = noFoodNames();
+  if(nf.length && (c.exNon || c.exDrk)){
+    L.push(`▶ 전체 제외 ${nf.length}명 (${nf.join(', ')}) : 식대·주류·음료수 없음`);
+  }
+  if(D.sendPeople){
+    const dc = state.autoDutch ? c : null;
+    const ppl = state.people.filter(p=>(p.name||'').trim());
+    if(ppl.length){ L.push('', '[개인별 금액]'); ppl.forEach(p=>L.push(`${p.name.trim()}  ${K(personTotal(p, dc))}`)); }
+  }
+  const acct = String(D.account||'').trim(), note = String(D.note||'').trim();
+  if(acct) L.push('', `💳 입금 계좌 : ${acct}`);
+  if(note) L.push('', note);
+  if(!/입금\s*부탁/.test(note)) L.push('', '입금 부탁드립니다.');   /* 맺음말 (비고에 이미 있으면 중복하지 않아요) */
+  return L.join('\n');
+}
+function refreshDutchMessage(force){
+  const ta = document.getElementById('dp-msg'); if(!ta) return;
+  if(force) dpMsgDirty = false;
+  if(!dpMsgDirty) ta.value = buildDutchMessage();
+}
+function dpSendStatus(t){ document.getElementById('dp-send-status').textContent = t; }
+async function copyDutchMessage(){
+  const ta = document.getElementById('dp-msg');
+  try{ await navigator.clipboard.writeText(ta.value); dpSendStatus('복사했어요! 카카오톡·문자 대화창에 붙여 넣어 보내세요.'); return; }catch(e){}
+  try{ ta.focus(); ta.select(); if(document.execCommand('copy')){ dpSendStatus('복사했어요! 카카오톡·문자 대화창에 붙여 넣어 보내세요.'); return; } }catch(e){}
+  dpSendStatus('자동 복사가 막혀 있어요. 위 문구를 길게 눌러 직접 복사해 주세요.');
+}
+async function shareDutchMessage(){
+  try{ await navigator.share({ title:`${state.mountain||'산행'} 더치페이`, text: document.getElementById('dp-msg').value }); dpSendStatus('공유했어요.'); }
+  catch(e){ dpSendStatus(e && e.name==='AbortError' ? '공유를 취소했어요.' : '공유하지 못했어요. 복사하기를 눌러 붙여 넣어 주세요.'); }
+}
+function smsDutchMessage(){
+  const a = document.createElement('a');
+  a.href = 'sms:?&body=' + encodeURIComponent(document.getElementById('dp-msg').value);
+  a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  dpSendStatus('문자 앱이 열리지 않으면 복사하기를 눌러 붙여 넣어 주세요.');
+}
+async function shareJpg(){
+  if(!currentJpgBlob) return;
+  const st = document.getElementById('jpg-status');
+  try{
+    const file = new File([currentJpgBlob], `${state.mountain||'정산'}_${activeTab()}.jpg`, { type:'image/jpeg' });
+    if(navigator.canShare && navigator.canShare({ files:[file] })){ await navigator.share({ files:[file], title:`${state.mountain||'산행'} 정산` }); st.textContent = '공유했어요.'; }
+    else st.textContent = '이 기기에서는 이미지 공유를 지원하지 않아요. "JPG로 저장" 후 보내 주세요.';
+  }catch(e){ st.textContent = (e && e.name==='AbortError') ? '공유를 취소했어요.' : '공유하지 못했어요. "JPG로 저장" 후 보내 주세요.'; }
+}
+function initDutchSend(){
+  const $ = id=>document.getElementById(id);
+  $('dp-total-note').value = state.dutch.totalNote || '';
+  $('dp-total-note').addEventListener('input', e=>{ state.dutch.totalNote = e.target.value; refreshDutchMessage(); saveState(); });
+  $('dp-send-people').checked = !!state.dutch.sendPeople;
+  $('dp-send-people').addEventListener('change', e=>{ state.dutch.sendPeople = e.target.checked; refreshDutchMessage(true); saveState(); });
+  $('dp-msg').addEventListener('input', ()=>{ dpMsgDirty = true; });
+  $('dp-send-copy').addEventListener('click', copyDutchMessage);
+  $('dp-send-sms').addEventListener('click', smsDutchMessage);
+  $('dp-send-reset').addEventListener('click', ()=>{ refreshDutchMessage(true); dpSendStatus('최신 금액으로 다시 만들었어요.'); });
+  if(navigator.share) { $('dp-send-share').style.display = ''; $('dp-send-share').addEventListener('click', shareDutchMessage); }
+  refreshDutchMessage(true);
+}
+function buildDutchSheetHTML(){
+  const c = dutchCalc(), D = state.dutch;
+  const nn = nonNames(), nnHtml = nn.length ? `<div class="small">${escapeHtml(nn.join(', '))}</div>` : '';
+  const nf = noFoodNames(), nfHtml = nf.length ? `<div class="small">${escapeHtml(nf.join(', '))}</div>` : '';
+  const nfNote = nf.length ? `<div class="small">전체 제외 ${nf.length}명(${escapeHtml(nf.join(', '))}) · 식대·주류·음료수 없음</div>` : '';
+  const tNote = String(D.totalNote||'').trim(), tNoteHtml = tNote ? `<div class="small" style="white-space:pre-wrap;">${escapeHtml(tNote)}</div>` : '';
+  const list = arr => arr.filter(r=>r.name || num(r.amount)).map(r=>`${escapeHtml(r.name||'-')} ${KRW(r.amount)}`).join(' + ');
+  const acct = String(D.account||'').trim(), note = String(D.note||'').trim();
+  const extraRows = (acct || note) ? `
+    <div style="height:18px;"></div>
+    <table class="lg">
+      <colgroup><col style="width:17%"><col></colgroup>
+      ${acct ? `<tr><td class="lg-exp-l">계좌번호</td><td style="font-size:15px; font-weight:700; white-space:pre-wrap;">${escapeHtml(acct)}</td></tr>` : ''}
+      ${note ? `<tr><td class="lg-exp-l">비고</td><td style="white-space:pre-wrap;">${escapeHtml(note)}</td></tr>` : ''}
+    </table>` : '';
+  const menuHtml = c.menu.rows.map((m,i)=>{
+    const who = (m.eatNon===c.bNon && m.eatDrk===c.bDrk) ? `전원 ${m.eatNon+m.eatDrk}명` : `${m.eatNon+m.eatDrk}명 (비주류 ${m.eatNon} · 주류 ${m.eatDrk})`;
+    return `<div>${escapeHtml(m.name || '메뉴 '+(i+1))} ${KRW(m.amount)}</div><div class="small">${who} · 1인 ${KRW(m.per)}</div>`;
+  }).join('');
+  const resultTable = c.uniform ? `
+    <table class="lg">
+      <colgroup><col style="width:14%"><col style="width:12%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col></colgroup>
+      <tr><th>구 분</th><th>인원</th><th>식대</th><th>주류·음료수</th><th>1인당 합계</th><th>총계</th></tr>
+      <tr><td class="lg-sub">비주류</td><td class="lg-sub">${c.bNon}명${nnHtml}</td><td class="num">${KRW(c.foodPer)}</td><td class="num">${KRW(c.drinkPer)}</td><td class="num" style="font-weight:800;">${KRW(c.nonPer)}</td><td class="num">${KRW(c.bNon*c.nonPer)}</td></tr>
+      ${c.exNon ? `<tr><td class="lg-sub">비주류<div class="small">전체 제외</div></td><td class="lg-sub">${c.exNon}명</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td class="num">-</td></tr>` : ''}
+      <tr><td class="lg-sub">주류</td><td class="lg-sub">${c.bDrk}명</td><td class="num">${KRW(c.foodPer)}</td><td class="num">${KRW(c.alcPer)}</td><td class="num" style="font-weight:800;">${KRW(c.drkPer)}</td><td class="num">${KRW(c.bDrk*c.drkPer)}</td></tr>
+      ${c.exDrk ? `<tr><td class="lg-sub">주류<div class="small">전체 제외</div></td><td class="lg-sub">${c.exDrk}명</td><td class="num">-</td><td class="num">-</td><td class="num">-</td><td class="num">-</td></tr>` : ''}
+      <tr class="lg-grand"><td colspan="5">합계</td><td class="num lg-red">${KRW(c.nonTotal + c.drkTotal)}</td></tr>
+    </table>` : `
+    <table class="lg">
+      <colgroup><col style="width:46%"><col><col></colgroup>
+      <tr><th>구 분</th><th>비주류</th><th>주류</th></tr>
+      ${dutchResultRows(c).map(r=>`<tr><td${r.strong ? ' style="font-weight:800;"' : ''}>${escapeHtml(r.label)}</td><td class="num"${r.strong ? ' style="font-weight:800;"' : ''}>${r.a}</td><td class="num"${r.strong ? ' style="font-weight:800;"' : ''}>${r.b}</td></tr>`).join('')}
+      <tr class="lg-grand"><td>합계</td><td colspan="2" class="num lg-red">${KRW(c.nonTotal + c.drkTotal)}</td></tr>
+    </table>
+    <div class="small" style="margin-top:6px;">※ 여러 메뉴를 먹은 분은 메뉴별 식대를 더하고, 음료수·주류는 한 번만 더해 주세요.</div>`;
+  return `
+    <div class="sheet-head">
+      <div class="htitle">🍻 ${escapeHtml(state.mountain||'')} 더치페이 정산</div>
+      <div class="hsub">${state.date ? fmtDate(state.date)+' · ' : ''}(단위:원)</div>
+    </div>
+    <table class="lg">
+      <colgroup><col style="width:17%"><col><col style="width:22%"></colgroup>
+      <tr><th>구 분</th><th>내 용</th><th>금 액</th></tr>
+      <tr><td class="lg-exp-l">총금액</td><td>식대 총인원 ${c.head}명 (비주류 ${c.non}명 · 주류 ${c.drk}명)${tNoteHtml}</td><td class="num">${KRW(c.total)}</td></tr>
+      <tr><td class="lg-exp-l">식대</td><td>${menuHtml || '총금액 − 주류 − 음료수'}${nfNote}</td><td class="num">${KRW(c.food)}</td></tr>
+      <tr><td class="lg-exp-l">주류</td><td>${list(D.alcohol)}<div class="small">주류 ${c.drk}명 · 1인 ${KRW(c.alcPer)}</div></td><td class="num">${lgMoney(c.alc)}</td></tr>
+      <tr><td class="lg-exp-l">음료수</td><td>${list(D.drinks)}<div class="small">비주류 ${c.non}명${nn.length ? `(${escapeHtml(nn.join(', '))})` : ''} · 1인 ${KRW(c.drinkPer)}</div></td><td class="num">${lgMoney(c.drink)}</td></tr>
+    </table>
+    <div style="height:18px;"></div>
+    ${resultTable}${extraRows}`;
+}
+
+/* ===== 자차 · 차량지원 ===== */
+function renderCars(){
+  const box = document.getElementById('car-list');
+  box.innerHTML = '';
+  state.cars.forEach((c,i)=>{
+    const row = document.createElement('div'); row.className = 'car-row';
+    row.innerHTML = `
+      <select data-i="${i}" data-f="kind"><option value="자차">자차</option><option value="차량지원">차량지원</option></select>
+      <input type="text" placeholder="운전자 이름" value="${escapeHtml(c.name||'')}" data-i="${i}" data-f="name">
+      <button class="icon-btn" aria-label="삭제" onclick="removeCar(${i})">×</button>
+      <input class="c2" type="number" min="0" placeholder="인원" value="${escapeHtml(c.count==null?'':c.count)}" data-i="${i}" data-f="count">
+      <input class="wide" type="text" placeholder="차량번호 / 차종" value="${escapeHtml(c.plate||'')}" data-i="${i}" data-f="plate">
+      <input class="wide" type="text" placeholder="비고" value="${escapeHtml(c.note||'')}" data-i="${i}" data-f="note" style="grid-column:1 / span 3;">`;
+    row.querySelector('select').value = c.kind || '자차';
+    row.querySelectorAll('input,select').forEach(el=>{
+      el.addEventListener('input', e=>{
+        const {i:ix,f} = e.target.dataset;
+        state.cars[ix][f] = e.target.value;
+        updateSeatPreviewOnly();
+        if(activeTab()==='people') renderPeople();
+      });
+    });
+    box.appendChild(row);
+  });
+}
+function addCar(){
+  state.cars.push({ kind:'자차', name:'', plate:'', count:'', note:'' });
+  renderCars(); updateSeatPreviewOnly();
+}
+function removeCar(i){
+  state.cars.splice(i,1);
+  renderCars(); updateSeatPreviewOnly();
+}
+
+/* ===== 호차(여러 대 버스) =====
+   화면의 좌석·픽업·버스정보는 항상 "선택된 호차"의 값이고, 다른 호차 값은 busList[i].data 에 보관해요. */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function stashActiveBus(){
+  const b = state.busList[state.activeBus]; if(!b) return;
+  b.data = { busType:state.busType, stdBackup:state.stdBackup||null, seatTotal:state.seatTotal, seatPerRow:state.seatPerRow, seats:state.seats, locations:state.locations, bus:state.bus };
+}
+function loadBus(i){
+  const d = state.busList[i].data;
+  state.activeBus = i;
+  state.busType = d.busType; state.stdBackup = d.stdBackup; state.seatTotal = d.seatTotal; state.seatPerRow = d.seatPerRow;
+  state.seats = d.seats; state.locations = d.locations; state.bus = d.bus;
+  document.getElementById('seat-total').value = state.seatTotal;
+  document.getElementById('seat-per-row').value = state.seatPerRow;
+  document.getElementById('bus-plate').value = state.bus.plate||'';
+  document.getElementById('bus-driver').value = state.bus.driver||'';
+  document.getElementById('bus-phone').value = state.bus.phone||'';
+  document.getElementById('bus-cable').value = state.bus.cable||'';
+  document.getElementById('bus-note').value = state.bus.note||'';
+  syncBusTypeUI();
+  renderSeatTab();
+}
+function switchBus(i){
+  if(i===state.activeBus || !state.busList[i]) return;
+  stashActiveBus(); loadBus(i); renderBusTabs(); saveState();
+}
+function addBus(){
+  stashActiveBus();
+  const n = state.busList.length + 1;
+  state.busList.push({ name:`${n}호차`, data:{
+    busType:'standard', stdBackup:null, seatTotal:28, seatPerRow:3,
+    seats: Array.from({length:28},()=>({name:'',loc:-1})),
+    locations: JSON.parse(JSON.stringify(state.locations)),
+    bus:{ plate:'', driver:'', phone:'', cable:'', photo:'', note:'' }
+  }});
+  loadBus(state.busList.length-1); renderBusTabs(); saveState();
+}
+async function removeBus(i){
+  if(state.busList.length<2) return;
+  if(!(await openDialog(`${state.busList[i].name}의 좌석·픽업·버스 정보를 삭제할까요?`, { okText:'삭제' }))) return;
+  if(i!==state.activeBus) stashActiveBus();
+  const wasActive = i===state.activeBus;
+  state.busList.splice(i,1);
+  const next = wasActive ? Math.max(0,i-1) : (state.activeBus>i ? state.activeBus-1 : state.activeBus);
+  state.busList.forEach((b,k)=>{ if(/^\d+호차$/.test(b.name)) b.name = `${k+1}호차`; });
+  loadBus(next); renderBusTabs(); saveState();
+}
+async function renameBus(i){
+  const v = await openDialog('호차 이름', { input: state.busList[i].name });
+  if(v && v.trim()){ state.busList[i].name = v.trim(); renderBusTabs(); renderSeatTab(); }
+}
+function renderBusTabs(){
+  const box = document.getElementById('bus-tabs');
+  box.innerHTML = '';
+  const many = state.busList.length>1;
+  state.busList.forEach((b,i)=>{
+    const wrap = document.createElement('span');
+    wrap.className = 'bus-tab-wrap' + (i===state.activeBus ? ' active' : '');
+    const btn = document.createElement('button');
+    btn.className = 'bus-tab'; btn.textContent = '🚌 ' + b.name; btn.title = '더블클릭: 이름 변경';
+    btn.addEventListener('click', ()=>switchBus(i));
+    btn.addEventListener('dblclick', ()=>renameBus(i));
+    wrap.appendChild(btn);
+    if(many){
+      const x = document.createElement('button');
+      x.className = 'bus-x'; x.textContent = '×'; x.title = `${b.name} 삭제`; x.setAttribute('aria-label', `${b.name} 삭제`);
+      x.addEventListener('click', e=>{ e.stopPropagation(); removeBus(i); });
+      wrap.appendChild(x);
+    }
+    box.appendChild(wrap);
+  });
+  const add = document.createElement('button');
+  add.className = 'bus-tab add'; add.textContent = '+ 호차 추가';
+  add.addEventListener('click', addBus); box.appendChild(add);
+  renderImportInputs();
+}
+function renderImportInputs(){
+  const box = document.getElementById('xl-bus-inputs');
+  box.innerHTML = '';
+  state.busList.forEach((b,i)=>{
+    const seats = i===state.activeBus ? state.seats : (b.data ? b.data.seats : []);
+    const cnt = seats.filter(s=>s.name).length;
+    const row = document.createElement('div'); row.className = 'xl-bus-row';
+    const bn = document.createElement('span'); bn.className = 'bn'; bn.textContent = b.name;
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.xlsx,.xls'; inp.multiple = true; inp.dataset.bus = String(i);
+    inp.addEventListener('change', handleXlInput);
+    const bc = document.createElement('span'); bc.className = 'bc'; bc.textContent = cnt ? `현재 ${cnt}명` : '';
+    row.append(bn, inp, bc); box.appendChild(row);
+  });
+}
+
+loadState();
+normNoRefunds();
+document.getElementById('mountain').value = state.mountain;
+document.getElementById('ev-date').value = state.date;
+document.getElementById('club').value = state.club;
+document.getElementById('unit-price').value = state.unitPrice;
+document.getElementById('head-count').value = state.headCount;
+document.getElementById('income-note').value = state.incomeNote;
+document.getElementById('bus-fee').value = state.busFee;
+document.getElementById('bus-plate').value = state.bus.plate;
+document.getElementById('bus-driver').value = state.bus.driver;
+document.getElementById('bus-phone').value = state.bus.phone;
+document.getElementById('bus-cable').value = state.bus.cable;
+document.getElementById('bus-note').value = state.bus.note||'';
+document.getElementById('seat-total').value = state.seatTotal;
+document.getElementById('seat-per-row').value = state.seatPerRow;
+
+function syncBusTypeUI(){
+  const pm = state.busType!=='standard';
+  document.getElementById('bus-type').value = state.busType;
+  document.getElementById('seat-total').disabled = pm;
+  document.getElementById('seat-per-row').disabled = pm;
+}
+const BUS_FIXED = { premium20:{ total:20, per:3 }, solati15:{ total:15, per:3 }, county20:{ total:19, per:3 }, bus45:{ total:45, per:4 } };
+function setBusType(type){
+  if(type===state.busType) return;
+  if(BUS_FIXED[type]){
+    if(state.busType==='standard') state.stdBackup = { total: state.seatTotal, perRow: state.seatPerRow, seats: state.seats.map(s=>({...s})) };
+    state.seatTotal = BUS_FIXED[type].total; state.seatPerRow = BUS_FIXED[type].per;
+  } else {
+    const b = state.stdBackup;
+    if(b){
+      const cur = state.seats.map(s=>({...s}));
+      state.seatTotal = b.total; state.seatPerRow = b.perRow;
+      state.seats = b.seats.map((s,i)=> cur[i] || s);
+    } else { state.seatTotal = 28; state.seatPerRow = 3; }
+    state.stdBackup = null;
+  }
+  state.busType = type;
+  document.getElementById('seat-total').value = state.seatTotal;
+  document.getElementById('seat-per-row').value = state.seatPerRow;
+  syncBusTypeUI();
+  renderSeatTab();
+}
+document.getElementById('bus-type').addEventListener('change', e=>setBusType(e.target.value));
+syncBusTypeUI();
+renderBusTabs();
+renderCars();
+renderLedgerTabs();
+initCarLedger();
+initReceipts();
+
+initDutch();
+initDutchSend();
+initLodge();
+initSeatBulk();
+initSettle();
+initNonBox();
+syncNonFromPeople();
+renderNonChips();
+renderRefundRows('full');
+renderRefundRows('half');
+renderNoRefund();
+recalcLedger();
+renderPeople();
+renderSeatTab();
+refreshMoney();
+</script>
+</body>
+</html>
