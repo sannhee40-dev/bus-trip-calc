@@ -146,7 +146,11 @@
     font-size:14px; padding:10px 16px; border-radius:9px; cursor:pointer;
   }
   .btn-primary:disabled{ opacity:0.5; cursor:default; }
-  .toolbar{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; margin: 2px 0 16px; }
+  .toolbar{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:center; margin: 2px 0 16px; }
+  .toolbar .toolbar-head{ display:flex; gap:8px; flex:1 1 320px; max-width:440px; margin-right:auto; }
+  .toolbar .toolbar-head input{ min-width:0; }
+  .toolbar .toolbar-head #mountain{ flex:1 1 auto; }
+  .toolbar .toolbar-head #ev-date{ flex:0 0 150px; }
 
   /* export sheets */
   #export-host{ position:fixed; top:0; left:-99999px; z-index:-1; }
@@ -254,6 +258,18 @@
   .sheet table.pm-chart td.pm-glass{ background:#DCE6F0; text-align:center; font-weight:700; color:#456; }
   .sheet table.pm-chart td.pm-door{ background:#F1F1F1; text-align:center; font-weight:700; color:#777; }
   .sheet table.pm-chart td.pm-aisle-lbl{ border:none !important; background:#EEF3F8 !important; text-align:center; color:#6A7A8A; font-size:12px; font-weight:700; line-height:1.9; }
+  .srch-row{ padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px; line-height:1.65; }
+  .srch-row:last-child{ border-bottom:none; }
+  mark.hit{ background:#FFE08A; color:inherit; border-radius:3px; padding:0 2px; }
+  .ev-card{ border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; background:var(--bg); }
+  .ev-card h3{ margin:0 0 4px; font-size:14.5px; }
+  .ev-meta{ font-size:12.5px; color:var(--ink-soft); line-height:1.65; }
+  .ev-actions{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .ev-card details{ margin-top:8px; font-size:12.5px; }
+  .ev-card details summary{ cursor:pointer; font-weight:700; }
+  .ev-card table.ev-t{ width:100%; border-collapse:collapse; margin-top:6px; }
+  .ev-card table.ev-t th, .ev-card table.ev-t td{ border:1px solid var(--line); padding:3px 7px; text-align:left; font-size:12.5px; }
+  .sec-h{ font-size:13px; font-weight:700; margin:14px 0 6px; }
   .lodge-row{ display:grid; grid-template-columns:1fr 140px 30px; gap:6px 8px; align-items:center; padding:10px; margin-bottom:8px; border:1px solid var(--line); border-radius:9px; background:var(--bg); }
   .lodge-row .wide{ grid-column:1 / span 3; }
   .lodge-info{ grid-column:1 / span 3; font-size:12.5px; color:var(--ink-soft); }
@@ -264,6 +280,11 @@
   .non-input-row{ display:flex; gap:8px; }
   .non-input-row input{ flex:1; min-width:0; }
   .nd-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .non-box{ padding:10px 12px; }
+  .non-box > label{ margin-bottom:6px; }
+  .non-box .nd-chips{ margin-top:6px; }
+  .non-box .nd-chips:empty{ display:none; }
+  .non-box .modal-status{ margin-top:4px; min-height:0; }
   .nd-chip{ display:inline-flex; align-items:center; gap:2px; padding:3px 3px 3px 11px; border-radius:14px; background:rgba(80,170,220,.2); border:1px solid rgba(80,170,220,.55); font-size:13px; font-weight:600; }
   .nd-chip button{ border:none; background:none; cursor:pointer; color:inherit; font-size:15px; line-height:1; padding:0 7px; }
   tr.row-non td{ background:rgba(80,170,220,.14); }
@@ -365,9 +386,14 @@
   <div class="key-legend"><span><i class="key-chip in"></i>노란 칸: 직접 입력</span><span><i class="key-chip auto"></i>회색 칸: 자동 계산</span></div>
 
   <div class="toolbar">
+    <div class="toolbar-head">
+      <input type="text" id="mountain" placeholder="산 이름 / 행사명">
+      <input type="date" id="ev-date">
+      <input type="hidden" id="club">
+    </div>
     <button class="btn-primary" onclick="openJpg()">🖼️ 화면과 같이 JPG로 보기</button>
-    <button class="send-btn" type="button" onclick="saveXlsx()">💾 엑셀로 저장</button>
-    <button class="send-btn" type="button" onclick="document.getElementById('xl-load-input').click()">📂 엑셀에서 불러오기</button>
+    <button class="send-btn" type="button" onclick="saveAll()">💾 엑셀로 저장</button>
+    <button class="send-btn" type="button" onclick="openLoadModal()">📂 불러오기 · 검색</button>
     <input type="file" id="xl-load-input" accept=".xlsx" style="display:none">
     <div class="modal-status" id="xl-backup-status" style="width:100%; line-height:1.6;"></div>
   </div>
@@ -384,15 +410,7 @@
         </div>
 
         <div class="card">
-          <div class="headline-inputs" style="margin:0;">
-            <input type="text" id="mountain" placeholder="산 이름 / 행사명">
-            <input type="date" id="ev-date">
-            <input type="text" id="club" placeholder="산악회 이름">
-          </div>
-        </div>
-
-        <div class="card">
-          <h2>픽업 장소</h2>
+          <h2>픽업 장소 <span style="font-weight:600; font-size:12.5px; color:var(--ink-soft);">(탑승지 엑셀 파일 불러오기)</span></h2>
           <div class="field" style="margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--line);">
             <label>📍 탑승지 엑셀 불러오기 (밴드에서 탑승지 엑셀 파일 1개)</label>
             <input type="file" id="pickup-import-input" data-status="pickup-import-status" accept=".xlsx,.xls">
@@ -401,6 +419,18 @@
           <div id="loc-list"></div>
           <button class="add-row" onclick="addLocation()">+ 픽업 장소 추가</button>
           <p class="footnote">장소마다 색이 다르게 들어가고, 좌석 배정 줄과 좌석표에 같은 색으로 표시돼요. 색 칸을 눌러 바꿀 수 있어요.</p>
+        </div>
+
+        <div class="card">
+          <h2>버스 정보</h2>
+          <div class="grid2">
+            <div class="field"><label>차량번호</label><input type="text" id="bus-plate" value="경기78아6800"></div>
+            <div class="field"><label>기사님</label><input type="text" id="bus-driver" value="김재호"></div>
+            <div class="field"><label>연락처</label><input type="text" id="bus-phone" value="010-6655-5329"></div>
+            <div class="field"><label>충전케이블</label><input type="text" id="bus-cable" value="USB타입"></div>
+          </div>
+          <div class="field" style="margin-top:10px;"><label>버스 사진 (선택)</label><input type="file" id="bus-photo-input" accept="image/*"></div>
+          <div class="field" style="margin-top:10px;"><label>비고 (좌석표 아래에 표시돼요)</label><textarea id="bus-note" rows="3" placeholder="예: 하산 후 식사 장소 이동, 준비물 안내 등"></textarea></div>
         </div>
 
         <div class="card auto-card">
@@ -429,18 +459,6 @@
             <div class="field"><label>줄당 좌석 수</label><input type="text" id="seat-per-row" value="3"></div>
           </div>
           <div id="seat-list"></div>
-        </div>
-
-        <div class="card">
-          <h2>버스 정보</h2>
-          <div class="grid2">
-            <div class="field"><label>차량번호</label><input type="text" id="bus-plate" value="경기78아6800"></div>
-            <div class="field"><label>기사님</label><input type="text" id="bus-driver" value="김재호"></div>
-            <div class="field"><label>연락처</label><input type="text" id="bus-phone" value="010-6655-5329"></div>
-            <div class="field"><label>충전케이블</label><input type="text" id="bus-cable" value="USB타입"></div>
-          </div>
-          <div class="field" style="margin-top:10px;"><label>버스 사진 (선택)</label><input type="file" id="bus-photo-input" accept="image/*"></div>
-          <div class="field" style="margin-top:10px;"><label>비고 (좌석표 아래에 표시돼요)</label><textarea id="bus-note" rows="3" placeholder="예: 하산 후 식사 장소 이동, 준비물 안내 등"></textarea></div>
         </div>
 
         <div class="card">
@@ -538,7 +556,7 @@
         <div class="field"><label>비주류 인원(명)</label><input class="num-in" type="number" inputmode="numeric" id="dp-non"><div class="field-hint" id="dp-non-hint"></div></div>
         <div class="field"><label>주류 인원(명)</label><div class="dp-auto" id="dp-drk">0</div></div>
       </div>
-      <div class="non-box" style="margin-top:12px;">
+      <div class="non-box" style="margin-top:8px; margin-bottom:10px;">
         <label>🥤 비주류 (술 안 마시는 분) 이름 입력 · <span id="nd-count">0</span>명</label>
         <div class="non-input-row">
           <input type="text" id="nd-input" list="nd-names" autocomplete="off" placeholder="이름 입력 후 Enter (예: 이연옥76 · 쉼표로 여러 명)">
@@ -547,8 +565,8 @@
         <datalist id="nd-names"></datalist>
         <div class="nd-chips" id="nd-chips"></div>
         <div class="modal-status" id="nd-status"></div>
-        <p class="footnote" style="margin-bottom:0;">이름을 입력하면 위의 <b>비주류 인원</b>이 이름 수로 자동 계산돼요. 입력한 분은 개인별 식대 정산(자동) 표에 비주류로 표시돼요. 이름만 쓰면(출생연도 없이) 명단에서 같은 이름을 찾고, 명단에 없으면 새로 추가해요.</p>
-        <div style="border-top:1px dashed var(--line); margin:14px 0 12px;"></div>
+        
+        <div style="border-top:1px dashed var(--line); margin:8px 0 8px;"></div>
         <label>🍽️ 식대 전체 제외 이름 입력 · <span id="nf-count">0</span>명</label>
         <div class="non-input-row">
           <input type="text" id="nf-input" list="nd-names" autocomplete="off" placeholder="식대를 안 내는 분 이름 후 Enter (예: 이상현 · 쉼표로 여러 명)">
@@ -556,7 +574,17 @@
         </div>
         <div class="nd-chips" id="nf-chips"></div>
         <div class="modal-status" id="nf-status"></div>
-        <p class="footnote" style="margin-bottom:0;">여기에 넣은 분은 <b>식대 · 주류 · 음료수 모두 빠져요</b> (예: 회비를 안 내는 분). 식대 총인원과 비주류·주류 인원 수에는 그대로 포함해 두면, 그 수에서 빼고 나머지 분들이 나눠요. 개인별 식대 정산(자동) 표의 "전체 제외" 체크로도 바꿀 수 있어요.</p>
+        
+      </div>
+      <div class="non-box" style="margin-top:8px; margin-bottom:10px;">
+        <label>🧾 영수증 첨부 <span class="tag expense">더치페이</span></label>
+      <label class="chk" style="margin-bottom:8px; font-weight:500;"><input type="checkbox" id="rc-auto" checked> 🤖 영수증을 올리면 총금액·식대·주류·음료수를 자동으로 입력</label>
+      <input type="file" id="receipt-input-dutch" accept="image/*" multiple>
+      <div class="rc-list" id="receipt-list-dutch"></div>
+      <div class="modal-status" id="receipt-status-dutch"></div>
+      <button class="add-row" id="rc-reread" type="button">🔍 첨부한 영수증 다시 읽어서 입력</button>
+      <div class="modal-status" id="rc-ai-status" style="font-weight:700;"></div>
+      <p class="footnote">자동 입력은 <b>총금액 · 식대(메뉴) · 주류 · 음료수</b>만 채워요. 인원과 먹은 사람은 직접 넣어 주세요. 읽은 결과가 틀릴 수 있으니 금액을 꼭 확인해 주세요. 영수증을 여러 장 올리면 금액이 이어서 더해져요.<br>식당 영수증·결제 내역 사진을 올리면 더치페이 이미지 오른쪽에 같이 들어가요. 사진은 용량을 줄여서 저장하고, 최대 6장까지 올릴 수 있어요.</p>
       </div>
       <div class="field" style="margin-top:10px;"><label>총금액</label><input class="num-in money" type="text" inputmode="numeric" id="dp-total"></div>
       <div class="field" style="margin-top:10px;"><label>비고 (총금액 설명 · 더치페이 이미지와 보내는 문구에 같이 나와요)</label><textarea id="dp-total-note" rows="2" placeholder="예: 식당 카드결제 합계 · 영수증 참고"></textarea></div>
@@ -614,13 +642,6 @@
       </div>
       <div class="modal-status" id="dp-send-status"></div>
       <p class="footnote">문구는 더치페이 금액, 계좌번호, 비고로 자동으로 만들어지고 직접 고칠 수도 있어요. <b>복사하기</b>를 누른 뒤 카카오톡·문자 대화창에 붙여 넣어 보내세요. 정산 표 이미지는 위의 "화면과 같이 JPG로 보기"에서 공유할 수 있어요.</p>
-    </div>
-    <div class="card">
-      <h2>🧾 영수증 첨부 <span class="tag expense">더치페이</span></h2>
-      <input type="file" id="receipt-input-dutch" accept="image/*" multiple>
-      <div class="rc-list" id="receipt-list-dutch"></div>
-      <div class="modal-status" id="receipt-status-dutch"></div>
-      <p class="footnote">식당 영수증·결제 내역 사진을 올리면 더치페이 이미지 오른쪽에 같이 들어가요. 사진은 용량을 줄여서 저장하고, 최대 6장까지 올릴 수 있어요.</p>
     </div>
   </section>
 
@@ -704,8 +725,7 @@
     </div>
   </section>
 
-
-
+  
   <section class="panel" id="panel-people">
     <div class="card">
       <h2>개인별 정산</h2>
@@ -741,6 +761,25 @@
 
 <div id="export-host">
   <div class="sheet" id="export-sheet"></div>
+</div>
+
+<div class="modal-backdrop" id="ev-modal">
+  <div class="modal-box" style="max-width:620px; width:94vw; max-height:90vh; overflow-y:auto;">
+    <h2 style="margin:0 0 4px; font-size:17px;">📂 불러오기 · 검색</h2>
+    <p class="footnote" style="margin:0 0 10px;">"엑셀로 저장"을 누를 때마다 이 브라우저에도 행사가 보관돼요. 위 산 이름·날짜로 미리 검색되어 있고, 이름이나 산 이름을 바꿔 다시 찾을 수 있어요.</p>
+    <input type="text" id="ev-q" placeholder="이름 또는 산 이름 (예: 김경민, 화악산)" autocomplete="off">
+    <div class="send-actions" style="margin-top:8px;">
+      <button class="sort-btn active" type="button" data-evmode="all">전체</button>
+      <button class="sort-btn" type="button" data-evmode="name">이름</button>
+      <button class="sort-btn" type="button" data-evmode="mountain">산 이름</button>
+    </div>
+    <label class="chk" style="margin:10px 0 0; font-size:13px;"><input type="checkbox" id="ev-date-only"> <span id="ev-date-label"></span></label>
+    <div id="ev-results" style="margin-top:10px;"></div>
+    <div class="modal-actions" style="margin-top:12px;">
+      <button type="button" id="ev-file">📁 엑셀 파일에서 불러오기</button>
+      <button type="button" class="primary" id="ev-close">닫기</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="dlg-modal">
@@ -2127,6 +2166,135 @@ function initSeatBulk(){
   document.getElementById('seat-bulk-load').addEventListener('click', seatBulkLoad);
   document.getElementById('seat-bulk-apply').addEventListener('click', seatBulkApply);
 }
+/* ===== 저장한 행사에서 검색 · 불러오기 =====
+   "엑셀로 저장"을 누르면 엑셀 파일과 함께 이 브라우저에도 행사(전체 입력값)가 보관돼요. */
+const EVENTS_KEY = 'bus-events-v1';
+let evMode = 'all';
+function evBusesOf(ev){
+  return ev.full.busList.map(b=>{ const d = b.data || {}; return { name:b.name, seats:d.seats||[], locations:d.locations||[] }; });
+}
+function loadEvents(){
+  let a = []; try{ a = JSON.parse(localStorage.getItem(EVENTS_KEY)||'[]'); }catch(e){}
+  if(!Array.isArray(a)) a = [];
+  a.forEach(ev=>{ if(ev.full && Array.isArray(ev.full.busList)) Object.defineProperty(ev, 'buses', { value:evBusesOf(ev), enumerable:false, writable:true, configurable:true }); });
+  return a.filter(ev=>Array.isArray(ev.buses));
+}
+function saveEvents(arr){ try{ localStorage.setItem(EVENTS_KEY, JSON.stringify(arr)); return true; }catch(e){ return false; } }
+function evTitle(ev){ return (ev.mountain||'').trim() || '(산 이름 없음)'; }
+function evId(){ return `${(state.mountain||'').trim()}|${state.date||''}`; }
+function snapshotFull(){
+  stashActiveBus();
+  return { id:evId(), mountain:state.mountain||'', date:state.date||'', club:state.club||'', savedAt:new Date().toISOString(), full:JSON.parse(JSON.stringify(stateWithoutImages())) };
+}
+function evSaveToList(){
+  const snap = snapshotFull();
+  if(!snap.full.busList.some(b=>((b.data||{}).seats||[]).some(s=>(s.name||'').trim()))) return { ok:false, msg:'좌석 이름이 없어서 검색 목록에는 보관하지 않았어요.' };
+  const events = loadEvents(), i = events.findIndex(e=>e.id===snap.id);
+  if(i>=0) events[i] = snap; else events.push(snap);
+  if(!saveEvents(events)) return { ok:false, msg:'저장 공간이 부족해서 검색 목록에는 보관하지 못했어요. 오래된 행사를 삭제해 주세요.' };
+  return { ok:true, msg:`검색 목록에도 보관했어요 (${evTitle(snap)}${snap.date ? ' '+snap.date : ''}${i>=0 ? ' · 덮어씀' : ''})` };
+}
+async function saveAll(){
+  const r = evSaveToList();
+  await saveXlsx();
+  const el = document.getElementById('xl-backup-status');
+  el.textContent = (el.textContent ? el.textContent + ' · ' : '') + r.msg;
+}
+function evSeatLoc(b, s){ return (s.loc>=0 && b.locations[s.loc]) ? b.locations[s.loc] : null; }
+function evSummary(ev){
+  let n = 0; const per = {};
+  ev.buses.forEach(b=>b.seats.forEach(s=>{ if((s.name||'').trim()){ n++; const l = evSeatLoc(b,s); const k = l ? l.name : '탑승지 미정'; per[k] = (per[k]||0)+1; } }));
+  return `호차 ${ev.buses.length}대 · 좌석 ${n}명` + (n ? ' · ' + Object.keys(per).map(k=>`${k} ${per[k]}명`).join(', ') : '');
+}
+function evNorm(s){ return String(s==null?'':s).toLowerCase().replace(/\s+/g,''); }
+function hl(text, q){
+  const t = String(text==null?'':text), qn = String(q||'').trim();
+  if(!qn) return escapeHtml(t);
+  const i = t.toLowerCase().indexOf(qn.toLowerCase());
+  if(i<0) return escapeHtml(t);
+  return escapeHtml(t.slice(0,i)) + '<mark class="hit">' + escapeHtml(t.slice(i,i+qn.length)) + '</mark>' + escapeHtml(t.slice(i+qn.length));
+}
+function evCardHTML(ev, q){
+  const same = ev.id === evId();
+  const rows = ev.buses.map(b=>{
+    const trs = b.seats.map((s,i)=>{ if(!(s.name||'').trim()) return ''; const l = evSeatLoc(b,s);
+      return `<tr><td>${i+1}번</td><td>${hl(s.name,q)}</td><td>${escapeHtml(s.label||'')}</td><td>${l ? escapeHtml(l.name+(l.time?' '+l.time:'')) : '-'}</td></tr>`; }).join('');
+    return `<div style="margin-top:6px; font-weight:700;">${escapeHtml(b.name)}</div><table class="ev-t"><tr><th>번호</th><th>이름</th><th>설명</th><th>탑승지</th></tr>${trs || '<tr><td colspan="4">입력된 좌석이 없어요</td></tr>'}</table>`;
+  }).join('');
+  return `<div class="ev-card">
+    <h3>⛰️ ${hl(evTitle(ev), q)}${ev.date ? ` <span style="font-weight:600; font-size:12.5px; color:var(--ink-soft);">${escapeHtml(ev.date)}</span>` : ''}${same ? ' <span style="font-size:11.5px; color:var(--accent);">✓ 지금 입력한 산 이름·날짜와 같아요</span>' : ''}</h3>
+    <div class="ev-meta">${ev.club ? escapeHtml(ev.club)+' · ' : ''}${escapeHtml(evSummary(ev))}</div>
+    <details><summary>좌석 보기</summary>${rows}</details>
+    <div class="ev-actions"><button class="send-btn" type="button" data-evload="${escapeHtml(ev.id)}">이 행사 불러오기</button><button class="send-btn" type="button" data-evdel="${escapeHtml(ev.id)}">삭제</button></div>
+  </div>`;
+}
+function bindEvActions(root){
+  root.querySelectorAll('[data-evload]').forEach(b=>b.addEventListener('click', ()=>evLoad(b.dataset.evload)));
+  root.querySelectorAll('[data-evdel]').forEach(b=>b.addEventListener('click', ()=>evDelete(b.dataset.evdel)));
+}
+function evSearch(){
+  const box = document.getElementById('ev-results'); if(!box) return;
+  const q = (document.getElementById('ev-q').value||'').trim(), qn = evNorm(q);
+  const dateOnly = document.getElementById('ev-date-only').checked && state.date;
+  const all = loadEvents(), events = all.filter(ev=>!dateOnly || ev.date===state.date);
+  const byDate = (a,b)=> String(b.date||'').localeCompare(String(a.date||''));
+  const sameFirst = (a,b)=> (b.id===evId()) - (a.id===evId()) || byDate(a,b);
+  let html = '';
+  if(!all.length){ box.innerHTML = '<div class="ev-meta">보관된 행사가 아직 없어요. "엑셀로 저장"을 누르면 이 목록에 보관돼요.</div>'; return; }
+  if(!qn){
+    html += `<div class="sec-h">📚 보관된 행사 ${events.length}개</div>`;
+    html += events.length ? events.slice().sort(sameFirst).map(ev=>evCardHTML(ev,'')).join('') : '<div class="ev-meta">이 날짜의 행사가 없어요. 위의 날짜 조건을 해제해 보세요.</div>';
+    box.innerHTML = html; bindEvActions(box); return;
+  }
+  if(evMode!=='mountain'){
+    const hits = [];
+    events.slice().sort(byDate).forEach(ev=>ev.buses.forEach(b=>b.seats.forEach((s,i)=>{ if(evNorm(s.name).includes(qn)) hits.push({ ev, b, s, n:i+1 }); })));
+    html += `<div class="sec-h">👤 이름 검색 결과 ${hits.length}건</div>`;
+    html += hits.length ? hits.map(r=>{ const l = evSeatLoc(r.b, r.s);
+      return `<div class="srch-row"><b>${hl(r.s.name,q)}</b> — ${escapeHtml(evTitle(r.ev))}${r.ev.date ? ` (${escapeHtml(r.ev.date)})` : ''}<br><span class="ev-meta">${escapeHtml(r.b.name)} ${r.n}번${r.s.label ? ' ('+escapeHtml(r.s.label)+')' : ''}${l ? ' · 탑승지 '+escapeHtml(l.name+(l.time?' '+l.time:'')) : ''}</span></div>`; }).join('')
+      : '<div class="ev-meta">일치하는 이름이 없어요.</div>';
+  }
+  if(evMode!=='name'){
+    const evs = events.filter(ev=>evNorm(ev.mountain).includes(qn)).sort(sameFirst);
+    html += `<div class="sec-h">⛰️ 산 이름 검색 결과 ${evs.length}개 행사</div>`;
+    html += evs.length ? evs.map(ev=>evCardHTML(ev,q)).join('') : `<div class="ev-meta">일치하는 산 이름이 없어요.${dateOnly ? ' 날짜 조건을 해제하면 다른 날짜의 행사도 볼 수 있어요.' : ''}</div>`;
+  }
+  box.innerHTML = html; bindEvActions(box);
+}
+async function evDelete(id){
+  const ev = loadEvents().find(e=>e.id===id); if(!ev) return;
+  if(!(await openDialog(`「${evTitle(ev)}${ev.date ? ' '+ev.date : ''}」 보관본을 삭제할까요?`, { okText:'삭제' }))) return;
+  saveEvents(loadEvents().filter(e=>e.id!==id)); evSearch();
+}
+async function evLoad(id){
+  const ev = loadEvents().find(e=>e.id===id); if(!ev) return;
+  if(!(await openDialog(`「${evTitle(ev)}${ev.date ? ' '+ev.date : ''}」 보관본을 불러올까요? 지금 입력한 내용은 보관본 내용으로 바뀌어요.`, { okText:'불러오기' }))) return;
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(ev.full)); }
+  catch(e){ xlStatus('저장 공간이 부족해서 불러오지 못했어요.'); return; }
+  closeLoadModal(); xlStatus('불러왔어요. 화면을 새로 고치는 중...');
+  setTimeout(()=>{ try{ location.reload(); }catch(e){ xlStatus('불러왔어요. 페이지를 새로고침해 주세요.'); } }, 300);
+}
+function openLoadModal(){
+  document.getElementById('ev-q').value = (state.mountain||'').trim();
+  const chk = document.getElementById('ev-date-only');
+  chk.disabled = !state.date; chk.checked = !!state.date;
+  document.getElementById('ev-date-label').textContent = state.date ? `날짜 ${state.date} 인 행사만 보기` : '날짜로 거르기 (위 날짜 칸이 비어 있어요)';
+  document.getElementById('ev-modal').classList.add('open');
+  evSearch();
+}
+function closeLoadModal(){ document.getElementById('ev-modal').classList.remove('open'); }
+function initEventSearch(){
+  document.getElementById('ev-q').addEventListener('input', evSearch);
+  document.getElementById('ev-date-only').addEventListener('change', evSearch);
+  document.getElementById('ev-close').addEventListener('click', closeLoadModal);
+  document.getElementById('ev-file').addEventListener('click', ()=>{ closeLoadModal(); document.getElementById('xl-load-input').click(); });
+  document.getElementById('ev-modal').addEventListener('click', e=>{ if(e.target.id==='ev-modal') closeLoadModal(); });
+  document.querySelectorAll('[data-evmode]').forEach(b=>b.addEventListener('click', ()=>{
+    evMode = b.dataset.evmode;
+    document.querySelectorAll('[data-evmode]').forEach(x=>x.classList.toggle('active', x===b));
+    evSearch();
+  }));
+}
 /* ===== 종합 정산 ===== */
 function stRound(x, mode){
   if(mode==='ceil10') return Math.ceil(x/10 - 1e-9) * 10;
@@ -2437,12 +2605,156 @@ function initLodge(){
   if(!Array.isArray(L.rooms) || !L.rooms.length) L.rooms = [{ name:'', price:'', members:'' }];
   renderLodgeRooms();
 }
+
+/* ===== 영수증 자동 입력 (Claude가 사진을 읽어서 더치페이 칸에 채워요) ===== */
+const RC_ALC = /소주|맥주|참이슬|진로|처음처럼|새로|카스|테라|하이트|켈리|클라우드|막걸리|청하|와인|위스키|사케|복분자|주류|생맥|병맥|OB|한라산|화요|과하주|맥콜없음/i;
+const RC_DRK = /사이다|콜라|음료|주스|탄산|제로|환타|스프라이트|식혜|커피|아메리카노|미네랄|생수|\b물\b|옥수수수염차|보리차|탄산수/;
+const RC_PROMPT = `첨부한 이미지는 한국 식당 영수증이에요. 아래 JSON만 출력하세요 (설명·코드블록 금지).
+{"total": 숫자, "items":[{"name":"상품명","unit":숫자,"qty":숫자,"amount":숫자,"cat":"food|alcohol|drink"}]}
+- total: 실제 결제(받을) 금액 (부가세 포함 최종 금액). 읽을 수 없으면 0.
+- items: 영수증의 상품 줄마다 1개. 단가(unit), 수량(qty), 금액(amount)을 각각 읽으세요. 금액은 단가×수량과 같아야 해요. 숫자는 쉼표 없이.
+- 글자가 흐리면 단가×수량=금액, 모든 금액의 합=합계금액이 맞도록 확인해서 가장 앞뒤가 맞는 값을 고르세요.
+- cat: 소주·맥주·막걸리·와인 등 술이면 alcohol, 사이다·콜라·주스·물 등 술이 아닌 마실 것이면 drink, 음식이면 food.
+- 상품명은 영수증에 적힌 그대로. 사진이 영수증이 아니면 {"total":0,"items":[]}.`;
+function rcStatus(t, bad){ const el = document.getElementById('rc-ai-status'); if(el){ el.textContent = t; el.style.color = bad ? 'var(--danger)' : ''; } }
+const RC_HI = new Map();   /* 영수증 읽기용 큰 사진 (저장용 작은 사진 → 큰 사진, 새로고침하면 사라져요) */
+function receiptHiBlob(file){
+  return new Promise((resolve,reject)=>{
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const w0 = img.naturalWidth || img.width, h0 = img.naturalHeight || img.height;
+        const r = Math.min(2, Math.max(0.5, 1600 / w0)), W = Math.round(w0*r), H = Math.round(h0*r);
+        const c = document.createElement('canvas'); c.width = W; c.height = H;
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,W,H); g.drawImage(img,0,0,W,H);
+        try{  /* 흑백 + 대비를 높여서 흐린 글자를 또렷하게 */
+          const id = g.getImageData(0,0,W,H), d = id.data, hist = new Uint32Array(256);
+          for(let i=0;i<d.length;i+=4){ const y = (d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114)|0; d[i]=y; hist[y]++; }
+          const n = W*H; let lo=0, hi=255, acc=0;
+          for(let v=0;v<256;v++){ acc+=hist[v]; if(acc>=n*0.02){ lo=v; break; } }
+          acc=0; for(let v=255;v>=0;v--){ acc+=hist[v]; if(acc>=n*0.25){ hi=v; break; } }
+          if(hi-lo<40){ lo=0; hi=255; }
+          for(let i=0;i<d.length;i+=4){ let y = (d[i]-lo)*255/(hi-lo); y = y<0?0:y>255?255:y; d[i]=d[i+1]=d[i+2]=y; }
+          g.putImageData(id,0,0);
+        }catch(e){}
+        c.toBlob(b=> b ? resolve(b) : reject(new Error('blob')), 'image/jpeg', 0.92);
+      };
+      img.onerror = reject; img.src = rd.result;
+    };
+    rd.onerror = reject; rd.readAsDataURL(file);
+  });
+}
+function dataUrlToBlob(u){
+  const [h,b] = u.split(','), mime = (h.match(/data:([^;]+)/)||[])[1] || 'image/jpeg', bin = atob(b), a = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) a[i] = bin.charCodeAt(i);
+  return new Blob([a], { type:mime });
+}
+async function readReceiptBlob(blob, retry){
+  const sample = (typeof claude !== 'undefined') ? await claude.use('sample') : null;
+  if(!sample) throw { code:'unavailable' };
+  const lim = sample.limits ? await sample.limits() : {};
+  if(!lim.images) throw { code:'images_unavailable' };
+  return await sample.json(RC_PROMPT, { images:[blob], modelTier: retry ? 'complex' : 'default', cache: !retry });
+}
+function rcNormalize(d){
+  const raw = (Array.isArray(d && d.items) ? d.items : []).map(it=>{
+    const name = String(it.name||'').trim(), qty = num(it.qty), unit = Math.round(num(it.unit)), a1 = Math.round(num(it.amount));
+    const a2 = (unit>0 && qty>0) ? unit*qty : 0;
+    let cat = ['food','alcohol','drink'].includes(it.cat) ? it.cat : '';
+    if(!cat) cat = RC_ALC.test(name) ? 'alcohol' : (RC_DRK.test(name) ? 'drink' : 'food');
+    return { name, qty, unit, a1, a2, cat };
+  }).filter(it=>it.name && (it.a1>0 || it.a2>0));
+  const total0 = Math.round(num(d && d.total));
+  const sumOf = f => raw.reduce((t,it)=>t+f(it),0);
+  /* 금액 줄과 단가×수량 중 합계금액에 맞는 쪽을 골라요 */
+  let mode = 'a1';
+  if(total0>0){
+    const s1 = sumOf(it=>it.a1), s2 = sumOf(it=>it.a2 || it.a1);
+    if(s1!==total0 && s2===total0) mode = 'a2';
+  }
+  const items = raw.map(it=>{
+    const amount = mode==='a2' ? (it.a2 || it.a1) : (it.a1 || it.a2);
+    return { name: it.qty>1 ? `${it.name} ×${it.qty}` : it.name, amount, cat: it.cat };
+  });
+  const sum = items.reduce((t,it)=>t+it.amount,0);
+  return { items, sum, total: total0 || sum, ok: !total0 || sum===total0 };
+}
+async function applyReceiptData(r, append){
+  const D = state.dutch;
+  const pick = c => r.items.filter(it=>it.cat===c).map(it=>({ name:it.name, amount:it.amount }));
+  const food = pick('food').map(m=>({ ...m, non:'', drk:'' })), alc = pick('alcohol'), drk = pick('drink');
+  const blank = row => !String(row.name||'').trim() && !num(row.amount);
+  if(append){
+    D.total = num(D.total) + r.total;
+    D.menus = (D.menus||[]).filter(m=>!blank(m)).concat(food);
+    D.alcohol = (D.alcohol||[]).filter(m=>!blank(m)).concat(alc);
+    D.drinks = (D.drinks||[]).filter(m=>!blank(m)).concat(drk);
+  } else {
+    D.total = r.total; D.menus = food; D.alcohol = alc; D.drinks = drk;
+  }
+  if(!D.menus.length) D.menus = [ { name:'메뉴명 1', amount:'', non:'', drk:'' } ];
+  D.rcFilled = true;
+  const t = document.getElementById('dp-total'); t.value = D.total; refreshMoney();
+  renderDutchRows('menus'); renderDutchRows('alcohol'); renderDutchRows('drinks'); updateDutch();
+}
+async function autoFillFromBlobs(blobs){
+  const btn = document.getElementById('rc-reread');
+  const D = state.dutch;
+  const hasData = num(D.total)>0 || (D.alcohol||[]).some(x=>num(x.amount)) || (D.drinks||[]).some(x=>num(x.amount)) || (D.menus||[]).some(x=>num(x.amount));
+  let append = !!D.rcFilled;
+  if(!append && hasData && !(await openDialog('이미 입력된 총금액·식대·주류·음료수가 영수증 내용으로 바뀌어요. 계속할까요?', { okText:'영수증으로 입력' }))){ rcStatus('자동 입력을 취소했어요.'); return; }
+  btn.disabled = true; let ok = 0, lastR = null;
+  try{
+    for(let i=0;i<blobs.length;i++){
+      rcStatus(`🤖 영수증 ${i+1}/${blobs.length}장을 읽는 중이에요... (10~30초)`);
+      let r = rcNormalize(await readReceiptBlob(blobs[i]));
+      if(!r.ok){   /* 합계가 안 맞으면 한 번 더, 더 꼼꼼하게 읽어요 */
+        rcStatus(`🤖 영수증 ${i+1}번 합계가 안 맞아서 한 번 더 꼼꼼히 읽는 중이에요...`);
+        try{ const r2 = rcNormalize(await readReceiptBlob(blobs[i], true)); if(r2.ok || r2.items.length) r = r2.ok ? r2 : (Math.abs(r2.sum-r2.total) < Math.abs(r.sum-r.total) ? r2 : r); }catch(e2){}
+      }
+      if(!r.items.length && !r.total){ rcStatus(`영수증 ${i+1}번에서 글자를 읽지 못했어요. 더 선명하게 다시 찍어 주세요.`, true); continue; }
+      await applyReceiptData(r, append); append = true; ok++; lastR = r;
+    }
+    if(ok){
+      const msg = `✅ 영수증 ${ok}장을 읽어서 입력했어요 · 총금액 ${KRW(state.dutch.total)}. 메뉴명·금액이 맞는지 확인해 주세요.`;
+      rcStatus(msg + ((lastR && ok===1 && Math.abs(lastR.sum-lastR.total)>0) ? ` (상품 합계 ${KRW(lastR.sum)}와 결제금액이 달라요. 금액을 확인해 주세요.)` : ''));
+    }
+  }catch(e){
+    const c = e && e.code;
+    rcStatus(c==='not_granted' ? 'Claude 사용을 허용하지 않아서 자동 입력을 건너뛰었어요. 직접 입력해 주세요.'
+      : c==='rate_limited' ? '요청이 너무 많아요. 잠시 후 \"다시 읽어서 입력\"을 눌러 주세요.'
+      : (c==='unavailable' || c==='images_unavailable') ? '자동 입력은 게시한 링크(Claude 안)에서만 돼요. 지금 화면에서는 직접 입력해 주세요.'
+      : '영수증을 읽지 못했어요. 다시 시도하거나 직접 입력해 주세요.', true);
+  } finally { btn.disabled = false; }
+}
+function initReceiptAI(){
+  document.getElementById('rc-reread').addEventListener('click', async ()=>{
+    const list = rcList('dutch');
+    if(!list.length){ rcStatus('먼저 영수증 사진을 올려 주세요.', true); return; }
+    state.dutch.rcFilled = false;
+    await autoFillFromBlobs(list.map(u=> RC_HI.get(u) || dataUrlToBlob(u)));
+  });
+}
+
 function initReceipts(){
   ['bus','car','dutch','lodge'].forEach(key=>{
     const inp = document.getElementById('receipt-input-'+key);
-    inp.addEventListener('change', async e=>{ const files = Array.from(e.target.files||[]); e.target.value = ''; if(files.length) await addReceipts(key, files); });
+    inp.addEventListener('change', async e=>{
+      const files = Array.from(e.target.files||[]); e.target.value = '';
+      if(!files.length) return;
+      const before = rcList(key).length;
+      await addReceipts(key, files);
+      if(key==='dutch' && document.getElementById('rc-auto').checked){
+        const added = rcList('dutch').slice(before);   // 새로 붙은 영수증만 읽어요
+        const imgs = files.filter(f=>/^image\//.test(f.type));
+        for(let k=0;k<added.length;k++){ try{ if(imgs[k]) RC_HI.set(added[k], await receiptHiBlob(imgs[k])); }catch(e){} }
+        if(added.length) await autoFillFromBlobs(added.map(u=> RC_HI.get(u) || dataUrlToBlob(u)));
+      }
+    });
     renderReceipts(key);
   });
+  initReceiptAI();
 }
 
 /* ===== 자차 정산내역 (정산내역 탭 위쪽의 탭 바에서 + 자차 추가로 만들어요) ===== */
@@ -3077,6 +3389,7 @@ initReceipts();
 initDutch();
 initDutchSend();
 initLodge();
+initEventSearch();
 initSeatBulk();
 initSettle();
 initNonBox();
