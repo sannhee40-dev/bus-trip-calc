@@ -70,6 +70,35 @@
   .card.auto-card{ background:var(--accent-soft); border-color:var(--accent); }
   .card.auto-card h2{ color:var(--accent); }
   .card h2{ font-size:14.5px; font-weight:700; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+
+  .card-toggle{ cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .card-toggle .caret{ display:inline-block; width:1.1em; text-align:center; color:var(--accent); }
+  .card-toggle .fold-hint{ margin-left:auto; font-size:12px; font-weight:600; color:var(--ink-soft); }
+  .refund-sec + .refund-sec{ margin-top:16px; padding-top:14px; border-top:1px dashed var(--line); }
+  .refund-sec h3{ font-size:13.5px; font-weight:700; margin:0 0 8px; display:flex; align-items:center; gap:8px; }
+  .refund-sec h3 .tag{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+  /* 식대 인원, 이름 입력 카드: 입력칸 3개 + 초기화 버튼 */
+  .card-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  .card-head h2{ margin:0; }
+  .pill-btn{ border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); font-family:inherit; font-size:13px; font-weight:600; padding:6px 14px; border-radius:999px; cursor:pointer; white-space:nowrap; }
+  .pill-btn:active{ transform:scale(0.97); }
+  .dp-top{ display:grid; grid-template-columns:repeat(3, minmax(0,104px)); justify-content:start; gap:10px; margin-bottom:4px; }
+  .dp-top .field label{ font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:4px; line-height:1.35; }
+  .dp-top .field label{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dp-top input.num-in, .dp-top .dp-auto{ height:32px; font-size:14px; font-weight:700; text-align:left; padding:0 8px; border-radius:8px; border-width:1px; }
+  .dp-top .dp-auto{ display:flex; align-items:center; justify-content:flex-start; color:var(--ink); box-sizing:border-box; height:32px; min-height:0; padding-top:0; padding-bottom:0; line-height:1; }
+  .dp-top input.num-in{ box-sizing:border-box; }
+  @media (max-width:430px){ .dp-top{ gap:8px; grid-template-columns:repeat(3, minmax(0,1fr)); } .dp-top input.num-in, .dp-top .dp-auto{ height:32px; font-size:14px; padding:0 8px; } }
+  /* 총인원·비주류·주류 칸과 이름 입력칸을 바탕색 한 덩어리로 묶어요 */
+  .dp-group{ margin:0 0 12px; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--bg); }
+  .dp-group > .dp-top{ margin-bottom:0; }
+  .dp-group > .non-box{ margin:12px 0 0 !important; padding:12px 0 0 !important; border:0; border-top:1px dashed var(--line); border-radius:0; background:transparent; }
+  .card.tint{ background:var(--bg); }
+  #dp-items-card .refund-sec h3{ font-size:15px; }
+  #dp-items-card .refund-sec h3 .tag.income{ background:#E4F1E7; color:#2E7D4F; }
+
+  .card.collapsed .card-body{ display:none; }
+  .card.collapsed .card-toggle{ margin-bottom:0; }
   .card h2 .tag{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
   .tag.income{ background:var(--income-soft); color:var(--income); }
   .tag.expense{ background:var(--expense-soft); color:var(--expense); }
@@ -290,6 +319,18 @@
   tr.row-non td{ background:rgba(80,170,220,.14); }
   tr.row-nofood td{ background:rgba(240,160,60,.16); }
   .nd-chip.nf-chip{ background:rgba(240,160,60,.22); border-color:rgba(240,160,60,.7); }
+  /* 비주류 · 전체 제외 알약 토글: 꺼짐=흰색, 켜짐=짙은 초록 */
+  :root{ --pill-on-bg:#1F3A2D; --pill-on-ink:#FFF0B8; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --pill-on-bg:#6FCF9B; --pill-on-ink:#10261B; } }
+  :root[data-theme="dark"]{ --pill-on-bg:#6FCF9B; --pill-on-ink:#10261B; }
+  .pill-toggle{ font-family:inherit; font-size:12.5px; font-weight:700; line-height:1; white-space:nowrap; padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer; transition:background .12s, color .12s, border-color .12s; }
+  .pill-toggle:active{ transform:scale(0.97); }
+  .pill-toggle.on{ background:var(--pill-on-bg); border-color:var(--pill-on-bg); color:var(--pill-on-ink); }
+  td.chk-cell .pill-toggle{ padding:7px 10px; font-size:12px; }
+  td.chk-cell{ white-space:nowrap; }
+  #panel-people table{ min-width:820px; }                       /* 좁은 화면에서는 표를 찌그러뜨리지 않고 옆으로 밀어서 봐요 */
+  #panel-people td select{ min-width:132px; }
+  #panel-people td.amt-cell{ min-width:86px; }
   td.chk-cell{ text-align:center; }
   td.chk-cell input[type=checkbox]{ width:18px; height:18px; cursor:pointer; }
   .field-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; }
@@ -348,6 +389,10 @@
   @media (max-width:520px){ .tab-btn{ margin-right:9px; font-size:13.5px; } }
   .menu-row{ display:grid; grid-template-columns:1fr 1fr 30px; gap:8px; padding:10px; margin-bottom:8px; border:1px solid var(--line); border-radius:9px; background:var(--bg); align-items:end; }
   .menu-row .m-top{ grid-column:1 / span 2; }
+  .menu-row .m-line{ grid-column:1 / -1; display:flex; gap:8px; align-items:flex-end; }
+  .menu-row .m-name{ flex:1 1 auto; min-width:0; }
+  .menu-row .m-amtbox{ flex:0 0 128px; min-width:0; }
+  .menu-row .m-line .icon-btn{ flex:none; align-self:flex-end; }
   .menu-row .m-wide{ grid-column:1 / span 3; }
   .menu-row .m-non{ grid-column:1; }
   .menu-row .m-drk{ grid-column:2; }
@@ -391,11 +436,29 @@
       <input type="date" id="ev-date">
       <input type="hidden" id="club">
     </div>
-    <button class="btn-primary" onclick="openJpg()">🖼️ 화면과 같이 JPG로 보기</button>
     <button class="send-btn" type="button" onclick="saveAll()">💾 엑셀로 저장</button>
     <button class="send-btn" type="button" onclick="openLoadModal()">📂 불러오기 · 검색</button>
+    <button class="btn-primary" onclick="openJpg()">🖼️ 화면과 같이 JPG로 보기</button>
     <input type="file" id="xl-load-input" accept=".xlsx" style="display:none">
     <div class="modal-status" id="xl-backup-status" style="width:100%; line-height:1.6;"></div>
+    <details id="sv-box" style="width:100%; margin-top:6px;">
+      <summary style="cursor:pointer; font-weight:700;">☁️ 서버에 저장 · 불러오기</summary>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+        <input type="text" id="sv-name" placeholder="저장 이름 (예: 설악산_1017)" style="flex:1 1 200px;">
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
+        <button class="send-btn" type="button" id="sv-save">☁️ 서버에 저장</button>
+        <button class="send-btn" type="button" id="sv-list">📂 저장 목록 보기</button>
+        <a href="/logout" class="send-btn" style="text-decoration:none; display:inline-block;">로그아웃</a>
+      </div>
+      <div id="sv-pick" style="display:none; flex-wrap:wrap; gap:6px; margin-top:6px;">
+        <select id="sv-select" style="flex:1 1 160px;"></select>
+        <button class="send-btn" type="button" id="sv-load">⬇️ 불러오기</button>
+        <button class="send-btn" type="button" id="sv-del">🗑️ 삭제</button>
+      </div>
+      <div class="modal-status" id="sv-status" style="line-height:1.6;"></div>
+      <p class="footnote" style="margin:4px 0 0;">사진(영수증·버스 사진)은 용량 때문에 서버에 저장하지 않아요. 불러오면 지금 화면의 사진은 그대로 남아요.</p>
+    </details>
   </div>
 
   <section class="panel active" id="panel-seat">
@@ -422,7 +485,8 @@
         </div>
 
         <div class="card">
-          <h2>버스 정보</h2>
+          <h2 class="card-toggle" id="bus-info-toggle" role="button" tabindex="0" aria-expanded="true" title="눌러서 접기·펼치기"><span class="caret">▾</span> 버스 정보 <span class="fold-hint">접기</span></h2>
+          <div class="card-body" id="bus-info-body">
           <div class="grid2">
             <div class="field"><label>차량번호</label><input type="text" id="bus-plate" value="경기78아6800"></div>
             <div class="field"><label>기사님</label><input type="text" id="bus-driver" value="김재호"></div>
@@ -431,10 +495,12 @@
           </div>
           <div class="field" style="margin-top:10px;"><label>버스 사진 (선택)</label><input type="file" id="bus-photo-input" accept="image/*"></div>
           <div class="field" style="margin-top:10px;"><label>비고 (좌석표 아래에 표시돼요)</label><textarea id="bus-note" rows="3" placeholder="예: 하산 후 식사 장소 이동, 준비물 안내 등"></textarea></div>
+          </div>
         </div>
 
         <div class="card auto-card">
-          <h2>좌석 배정(자동 입력)</h2>
+          <h2 class="card-toggle" id="seat-assign-toggle" role="button" tabindex="0" aria-expanded="true" title="눌러서 접기·펼치기"><span class="caret">▾</span> 좌석 배정(자동 입력) <span class="fold-hint">접기</span></h2>
+          <div class="card-body" id="seat-assign-body">
           <div class="field" style="margin-bottom:12px;">
             <label>버스 종류</label>
             <select id="bus-type">
@@ -459,13 +525,16 @@
             <div class="field"><label>줄당 좌석 수</label><input type="text" id="seat-per-row" value="3"></div>
           </div>
           <div id="seat-list"></div>
+          </div>
         </div>
 
         <div class="card">
-          <h2>자차 · 차량지원 정보</h2>
+          <h2 class="card-toggle" id="car-info-toggle" role="button" tabindex="0" aria-expanded="true" title="눌러서 접기·펼치기"><span class="caret">▾</span> 자차 · 차량지원 정보 <span class="fold-hint">접기</span></h2>
+          <div class="card-body" id="car-info-body">
           <div id="car-list"></div>
           <button class="add-row" onclick="addCar()">+ 자차 추가</button>
           <p class="footnote">엑셀의 차량지원 · 자차 탑승자는 불러올 때 자동으로 들어와요. 입력한 내용은 좌석표 아래에 표로 나와요.</p>
+          </div>
         </div>
       </div>
 
@@ -487,26 +556,34 @@
         <div class="field"><label>인원 수</label><input class="num-in" type="number" id="head-count" value="35"></div>
       </div>
       <div class="field" style="margin-top:10px;"><label>비고</label><input type="text" id="income-note" value="제외 : 리딩 안혜숙 리더"></div>
+      <table id="extra-income-table" style="margin-top:12px; display:none;"><thead><tr><th>추가 수입 내용</th><th style="text-align:right;">금액</th><th></th></tr></thead><tbody id="extra-income-body"></tbody></table>
+      <button class="add-row" type="button" onclick="addExtraIncome()">+ 수입 추가</button>
       <div class="subtotal-line">수입 합계 <b id="income-total">0원</b></div>
+      <div class="footnote" id="income-breakdown" style="margin:4px 0 0; display:none;"></div>
     </div>
     <div class="card">
-      <h2><span class="tag expense">지출</span> 전액 환불</h2>
-      <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">환불액</th><th></th></tr></thead><tbody id="full-refund-body"></tbody></table>
-      <button class="add-row" onclick="addRefundRow('full')">+ 전액 환불 추가</button>
-      <div class="subtotal-line">전액 환불 합계 <b id="full-refund-total">0원</b></div>
-    </div>
-    <div class="card">
-      <h2><span class="tag expense">지출</span> 50% 환불</h2>
-      <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">원 금액</th><th></th></tr></thead><tbody id="half-refund-body"></tbody></table>
-      <button class="add-row" onclick="addRefundRow('half')">+ 50% 환불 추가</button>
-      <div class="subtotal-line">50% 환불 합계 (원 금액의 절반) <b id="half-refund-total">0원</b></div>
-    </div>
-    <div class="card">
-      <h2>환불 불가</h2>
-      <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">금액</th><th></th></tr></thead><tbody id="no-refund-body"></tbody></table>
-      <button class="add-row" onclick="addNoRefundRow()">+ 이름 추가</button>
-      <div class="subtotal-line"><span>환불 불가 합계 (<span id="no-refund-count">0</span>명)</span><b id="no-refund-total">0원</b></div>
-      <p class="footnote">환불해 주지 않는 금액을 기록하는 칸이에요. 이미 수입에 들어 있는 돈이라 지출 합계에는 넣지 않아요.</p>
+      <h2 class="card-toggle" id="refund-toggle" role="button" tabindex="0" aria-expanded="true" title="눌러서 접기·펼치기"><span class="caret">▾</span> 환불 <span style="font-weight:600; font-size:12.5px; color:var(--ink-soft);">(전액 · 50% · 환불 불가)</span> <span class="fold-hint">접기</span></h2>
+      <div class="card-body" id="refund-body">
+        <div class="refund-sec">
+          <h3><span class="tag expense">지출</span> 전액 환불</h3>
+          <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">환불액</th><th></th></tr></thead><tbody id="full-refund-body"></tbody></table>
+          <button class="add-row" onclick="addRefundRow('full')">+ 전액 환불 추가</button>
+          <div class="subtotal-line">전액 환불 합계 <b id="full-refund-total">0원</b></div>
+        </div>
+        <div class="refund-sec">
+          <h3><span class="tag expense">지출</span> 50% 환불</h3>
+          <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">원 금액</th><th></th></tr></thead><tbody id="half-refund-body"></tbody></table>
+          <button class="add-row" onclick="addRefundRow('half')">+ 50% 환불 추가</button>
+          <div class="subtotal-line">50% 환불 합계 (원 금액의 절반) <b id="half-refund-total">0원</b></div>
+        </div>
+        <div class="refund-sec">
+          <h3>환불 불가</h3>
+          <table><thead><tr><th>이름 / 사유</th><th style="text-align:right;">금액</th><th></th></tr></thead><tbody id="no-refund-body"></tbody></table>
+          <button class="add-row" onclick="addNoRefundRow()">+ 이름 추가</button>
+          <div class="subtotal-line"><span>환불 불가 합계 (<span id="no-refund-count">0</span>명)</span><b id="no-refund-total">0원</b></div>
+          <p class="footnote">환불해 주지 않는 금액을 기록하는 칸이에요. 이미 수입에 들어 있는 돈이라 지출 합계에는 넣지 않아요.</p>
+        </div>
+      </div>
     </div>
     <div class="card">
       <h2><span class="tag expense">지출</span> 버스비</h2>
@@ -550,11 +627,12 @@
 
   <section class="panel" id="panel-dutch">
     <div class="card">
-      <h2>🍻 인원 · 총금액</h2>
-      <div class="grid3">
-        <div class="field"><label>식대 총인원(명)</label><input class="num-in" type="number" inputmode="numeric" id="dp-head"></div>
-        <div class="field"><label>비주류 인원(명)</label><input class="num-in" type="number" inputmode="numeric" id="dp-non"><div class="field-hint" id="dp-non-hint"></div></div>
-        <div class="field"><label>주류 인원(명)</label><div class="dp-auto" id="dp-drk">0</div></div>
+      <div class="card-head"><h2>👥 식대 인원, 이름 입력</h2><button type="button" class="pill-btn" id="dp-reset">초기화</button></div>
+      <div class="dp-group">
+      <div class="dp-top">
+        <div class="field"><label>식대 총인원</label><input class="num-in" type="number" inputmode="numeric" id="dp-head"></div>
+        <div class="field"><label>비주류 인원</label><input class="num-in" type="number" inputmode="numeric" id="dp-non"><div class="field-hint" id="dp-non-hint"></div></div>
+        <div class="field"><label>주류 인원</label><div class="dp-auto" id="dp-drk">0명</div></div>
       </div>
       <div class="non-box" style="margin-top:8px; margin-bottom:10px;">
         <label>🥤 비주류 (술 안 마시는 분) 이름 입력 · <span id="nd-count">0</span>명</label>
@@ -576,6 +654,7 @@
         <div class="modal-status" id="nf-status"></div>
         
       </div>
+      </div>
       <div class="non-box" style="margin-top:8px; margin-bottom:10px;">
         <label>🧾 영수증 첨부 <span class="tag expense">더치페이</span></label>
       <label class="chk" style="margin-bottom:8px; font-weight:500;"><input type="checkbox" id="rc-auto" checked> 🤖 영수증을 올리면 총금액·식대·주류·음료수를 자동으로 입력</label>
@@ -591,28 +670,29 @@
       <p class="footnote" style="margin:6px 0 0;"><b>아이폰:</b> 사진 앱에서 영수증을 열고 글자를 길게 눌러 모두 선택 → 복사<br><b>갤럭시:</b> 갤러리에서 영수증을 열고 글자 아이콘(또는 구글 렌즈) → 텍스트 복사<br>상품명 · 단가 · 수량 · 금액이 보이게 복사해 주세요. 상품 줄이 안 읽히면 금액을 직접 고쳐 주세요.</p>
       <p class="footnote">자동 입력은 <b>총금액 · 식대(메뉴) · 주류 · 음료수</b>만 채워요. 인원과 먹은 사람은 직접 넣어 주세요. 읽은 결과가 틀릴 수 있으니 금액을 꼭 확인해 주세요. 영수증을 여러 장 올리면 금액이 이어서 더해져요.<br>식당 영수증·결제 내역 사진을 올리면 더치페이 이미지 오른쪽에 같이 들어가요. 사진은 용량을 줄여서 저장하고, 최대 6장까지 올릴 수 있어요.</p>
       </div>
-      <div class="field" style="margin-top:10px;"><label>총금액</label><input class="num-in money" type="text" inputmode="numeric" id="dp-total"></div>
-      <div class="field" style="margin-top:10px;"><label>비고 (총금액 설명 · 더치페이 이미지와 보내는 문구에 같이 나와요)</label><textarea id="dp-total-note" rows="2" placeholder="예: 식당 카드결제 합계 · 영수증 참고"></textarea></div>
       <p class="footnote">비주류는 술을 안 마시는 분이에요. <b>비주류 이름을 입력하면 비주류 인원이 이름 수로 자동 계산</b>되고(이름이 없으면 직접 입력), 주류 인원은 식대 총인원에서 비주류를 뺀 값으로 자동 계산돼요.</p>
     </div>
-    <div class="card">
-      <h2>🍽️ 식대 <span class="tag expense">먹은 분끼리</span></h2>
-      <div id="dp-menu-list"></div>
-      <button class="add-row" onclick="addDutchItem('menus')">+ 메뉴 추가</button>
-      <div class="subtotal-line"><span>식대 계</span><b id="dp-menu-sum">0원</b></div>
-      <p class="footnote">금액을 비워 두면 <b>총금액 − 주류 − 음료수</b>로 자동 계산돼요. 메뉴를 추가하고 금액을 적으면, 비워 둔 메뉴가 나머지 금액을 가져가요.<br>먹은 인원 칸을 비우면 <b>전원</b>이 먹은 걸로 계산해요. 한 메뉴에 먹은 비주류·주류 인원을 적으면 그 메뉴는 먹은 분끼리만 나누고, <b>인원을 비워 둔 메뉴는 그 인원을 뺀 나머지가 자동으로 들어가요</b> (예: 메뉴 2에 3명을 적으면 메뉴 1은 총인원에서 3명 제외).</p>
-    </div>
-    <div class="card">
-      <h2>🍶 주류</h2>
-      <div id="dp-alc-list"></div>
-      <button class="add-row" onclick="addDutchItem('alcohol')">+ 주류 추가</button>
-      <div class="subtotal-line"><span>주류 계</span><b id="dp-alc-sum">0원</b></div>
-    </div>
-    <div class="card">
-      <h2>🥤 음료수 <span class="tag income">비주류</span></h2>
-      <div id="dp-drk-list"></div>
-      <button class="add-row" onclick="addDutchItem('drinks')">+ 음료수 추가</button>
-      <div class="subtotal-line"><span>음료수 계</span><b id="dp-drk-sum">0원</b></div>
+    <div class="card tint" id="dp-items-card">
+      <div class="field" style="margin:0 0 14px;"><label>총금액</label><input class="num-in money" type="text" inputmode="numeric" id="dp-total"></div>
+      <div class="refund-sec" style="margin-top:0; padding-top:14px; border-top:1px dashed var(--line);">
+        <h3>🍽️ 식대 <span class="tag expense">먹은 분끼리</span></h3>
+        <div id="dp-menu-list"></div>
+        <button class="add-row" onclick="addDutchItem('menus')">+ 메뉴 추가</button>
+        <div class="subtotal-line"><span>식대 계</span><b id="dp-menu-sum">0원</b></div>
+        <p class="footnote">금액을 비워 두면 <b>총금액 − 주류 − 음료수</b>로 자동 계산돼요. 메뉴를 추가하고 금액을 적으면, 비워 둔 메뉴가 나머지 금액을 가져가요.<br>먹은 인원 칸을 비우면 <b>전원</b>이 먹은 걸로 계산해요. 한 메뉴에 먹은 비주류·주류 인원을 적으면 그 메뉴는 먹은 분끼리만 나누고, <b>인원을 비워 둔 메뉴는 그 인원을 뺀 나머지가 자동으로 들어가요</b> (예: 메뉴 2에 3명을 적으면 메뉴 1은 총인원에서 3명 제외).</p>
+      </div>
+      <div class="refund-sec">
+        <h3>🍶 주류</h3>
+        <div id="dp-alc-list"></div>
+        <button class="add-row" onclick="addDutchItem('alcohol')">+ 주류 추가</button>
+        <div class="subtotal-line"><span>주류 계</span><b id="dp-alc-sum">0원</b></div>
+      </div>
+      <div class="refund-sec">
+        <h3>🥤 음료수 <span class="tag income">비주류</span></h3>
+        <div id="dp-drk-list"></div>
+        <button class="add-row" onclick="addDutchItem('drinks')">+ 음료수 추가</button>
+        <div class="subtotal-line"><span>음료수 계</span><b id="dp-drk-sum">0원</b></div>
+      </div>
     </div>
     <div class="card">
       <h2>💰 금액 정리</h2>
@@ -622,7 +702,8 @@
       <div class="subtotal-line"><span>음료수 계</span><b id="dp-r-drink">0원</b></div>
     </div>
     <div class="card">
-      <h2>🧮 1인당 금액</h2>
+      <h2 class="card-toggle" id="dp-result-toggle" role="button" tabindex="0" aria-expanded="true" title="눌러서 접기·펼치기"><span class="caret">▾</span> 🧮 1인당 금액 <span class="fold-hint">접기</span></h2>
+      <div class="card-body" id="dp-result-fold">
       <table>
         <thead><tr><th></th><th style="text-align:right;">비주류</th><th style="text-align:right;">주류</th></tr></thead>
         <tbody id="dp-result-body"></tbody>
@@ -631,9 +712,11 @@
       <div class="modal-status" id="dp-warn" style="color:var(--danger);"></div>
       
       <p class="footnote">식대는 메뉴마다 먹은 분끼리(먹은 인원을 비우면 전원), 주류는 마신 분끼리, 음료수는 비주류끼리 나눠요. 여러 메뉴를 먹은 분은 메뉴별 식대를 더하고 음료수·주류는 한 번만 더해요. 1인당 금액은 반올림해서 보여주고, 총계는 소수점까지 계산한 값이에요.</p>
+      </div>
     </div>
     <div class="card" id="dp-send-card">
-      <h2>📤 더치페이 보내기</h2>
+      <h2 class="card-toggle" id="dp-send-toggle" role="button" tabindex="0" aria-expanded="true" title="눌러서 접기·펼치기"><span class="caret">▾</span> 📤 더치페이 보내기 <span class="fold-hint">접기</span></h2>
+      <div class="card-body" id="dp-send-fold">
       <div class="field" style="margin-top:0;"><label>계좌번호 (은행 · 계좌번호 · 예금주)</label><input type="text" id="dp-account" inputmode="text" autocomplete="off" placeholder="예: 00은행 000-0000-0000-00 (예금주)"></div>
       <div class="field" style="margin-top:10px;"><label>비고 (보내는 문구와 더치페이 이미지에 같이 나와요)</label><textarea id="dp-note" rows="2" placeholder="예: 식대 정산 후 남는 금액은 운영자금으로 귀속"></textarea></div>
       <div style="height:12px;"></div>
@@ -647,6 +730,7 @@
       </div>
       <div class="modal-status" id="dp-send-status"></div>
       <p class="footnote">문구는 더치페이 금액, 계좌번호, 비고로 자동으로 만들어지고 직접 고칠 수도 있어요. <b>복사하기</b>를 누른 뒤 카카오톡·문자 대화창에 붙여 넣어 보내세요. 정산 표 이미지는 위의 "화면과 같이 JPG로 보기"에서 공유할 수 있어요.</p>
+      </div>
     </div>
   </section>
 
@@ -733,7 +817,8 @@
   
   <section class="panel" id="panel-people">
     <div class="card">
-      <h2>개인별 정산</h2>
+      <h2 class="card-toggle" id="people-fold-toggle" role="button" tabindex="0" aria-expanded="true" title="눌러서 접기·펼치기"><span class="caret">▾</span> 개인별 정산 <span class="fold-hint">접기</span></h2>
+      <div class="card-body" id="people-fold-body">
       <label class="chk" style="margin-bottom:6px;"><input type="checkbox" id="auto-dutch"> 🍻 더치페이 금액으로 식대·주류·비주류 자동 입력</label>
       <div class="modal-status" id="auto-note" style="margin:0 0 12px; line-height:1.6;"></div>
       <div class="sort-bar">
@@ -741,7 +826,7 @@
         <button class="sort-btn" id="sort-name" onclick="sortPeople('name')">이름순</button>
         <button class="sort-btn" id="sort-seat" onclick="sortPeople('seat')">좌석순</button>
       </div>
-      <p class="footnote" style="margin:0 0 14px;">🥤 비주류(술 안 마시는 분) <b>이름은 당일 더치페이(1/N) 탭 → 인원 · 총금액</b>에서 입력해요. 현재 <b id="nd-count-people">0</b>명이에요. 아래 표의 체크 칸으로도 바꿀 수 있어요.
+      <p class="footnote" style="margin:0 0 14px;">🥤 비주류(술 안 마시는 분) <b>이름은 당일 더치페이(1/N) 탭 → 식대 인원, 이름 입력</b>에서 입력해요. 현재 <b id="nd-count-people">0</b>명이에요. 아래 표의 체크 칸으로도 바꿀 수 있어요.
         <button class="sort-btn" type="button" style="margin-left:6px;" onclick="document.querySelector('.tab-btn[data-tab=dutch]').click()">당일 더치페이(1/N) 탭으로 →</button></p>
       <div style="overflow-x:auto;">
       <table>
@@ -752,13 +837,16 @@
       <button class="add-row" onclick="addPerson()">+ 이름 추가</button>
       <div class="subtotal-line">전체 합계 <b id="people-total">0원</b></div>
       <div class="field" style="margin-top:14px;"><label>비고 (개인별 정산 이미지에 같이 나와요)</label><textarea id="pp-note" rows="2" placeholder="예: 식대 정산 후 남는 금액은 운영자금으로 귀속"></textarea></div>
+      </div>
     </div>
     <div class="card">
-      <h2>🧾 영수증 <span class="tag expense">더치페이</span></h2>
+      <h2 class="card-toggle" id="people-receipt-toggle" role="button" tabindex="0" aria-expanded="true" title="눌러서 접기·펼치기"><span class="caret">▾</span> 🧾 영수증 <span class="tag expense">더치페이</span> <span class="fold-hint">접기</span></h2>
+      <div class="card-body" id="people-receipt-body">
       <div class="rc-list big" id="receipt-view-people"></div>
       <div class="modal-status" id="receipt-view-status"></div>
       <button class="add-row" onclick="document.querySelector('.tab-btn[data-tab=dutch]').click()">당일 더치페이(1/N) 탭에서 영수증 올리기 · 지우기 →</button>
       <p class="footnote">당일 더치페이(1/N) 탭에 첨부한 영수증이 그대로 보여요. 개인별 정산 이미지 오른쪽에도 같이 들어가요.</p>
+      </div>
     </div>
   </section>
 
@@ -864,7 +952,7 @@ let state = {
   date: '2026-09-19',
   club: '청마루 산악회',
 
-  unitPrice: 36000, headCount: 35, incomeNote: '제외 : 리딩 안혜숙 리더',
+  unitPrice: 36000, headCount: 35, incomeNote: '제외 : 리딩 안혜숙 리더', extraIncomes: [],
   fullRefunds: [ { name:'황효영77(스타리아 운전)', amount:36000 } ],
   halfRefunds: [],
   noRefunds: ['이유리72','조미경72','우정주74','손기중74','배수근74'],
@@ -989,7 +1077,7 @@ function blankState(){
     lodge:{ name:'', checkin:'', checkout:'', contact:'', rooms:[{ name:'', price:'', members:'' }], note:'' },
     carLedgers:[], activeLedger:-1, autoDutch:true, peopleNote:'',
     dutch:{ note:'', account:'', total:0, head:0, non:0, menus:[ {name:'메뉴명 1', amount:'', non:'', drk:''} ], alcohol:[], drinks:[] },
-    mountain:'', date:'', club:'', unitPrice:0, headCount:0, incomeNote:'', fullRefunds:[], halfRefunds:[], noRefunds:[], busFee:0,
+    mountain:'', date:'', club:'', unitPrice:0, headCount:0, incomeNote:'', extraIncomes:[], fullRefunds:[], halfRefunds:[], noRefunds:[], busFee:0,
     dishes:[], people:[], bus:{ plate:'', driver:'', phone:'', cable:'', photo:'' }, locations:[],
     seatTotal:28, seatPerRow:3, seats:[]
   };
@@ -1069,9 +1157,43 @@ function renderNoRefund(){
 function addNoRefundRow(){ state.noRefunds.push({ name:'', amount:num(state.unitPrice) }); renderNoRefund(); saveState(); }
 function removeNoRefund(i){ state.noRefunds.splice(i,1); renderNoRefund(); saveState(); }
 
+/* 추가 수입 (회비 외의 수입: 후원금, 남은 식대 등) */
+function extraIncomeTotal(){ return (state.extraIncomes||[]).reduce((s,r)=>s+num(r.amount),0); }
+function renderExtraIncome(){
+  state.extraIncomes = state.extraIncomes || [];
+  const body = document.getElementById('extra-income-body');
+  document.getElementById('extra-income-table').style.display = state.extraIncomes.length ? '' : 'none';
+  body.innerHTML = '';
+  state.extraIncomes.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="name-cell"><input type="text" value="${escapeHtml(r.name||'')}" placeholder="예: 후원금" data-i="${i}" data-f="name"></td>
+      <td class="amt-cell"><input class="num-in money" type="text" inputmode="numeric" value="${r.amount==null?'':r.amount}" data-i="${i}" data-f="amount"></td>
+      <td><button class="icon-btn" type="button" onclick="removeExtraIncome(${i})" aria-label="삭제">×</button></td>`;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const {i,f} = e.target.dataset;
+      state.extraIncomes[i][f] = f==='amount' ? num(e.target.value) : e.target.value;
+      recalcLedger();
+    });
+  });
+}
+function addExtraIncome(){
+  (state.extraIncomes = state.extraIncomes || []).push({ name:'', amount:0 });
+  renderExtraIncome(); recalcLedger();
+  const ins = document.querySelectorAll('#extra-income-body input[data-f="name"]'); if(ins.length) ins[ins.length-1].focus();
+}
+function removeExtraIncome(i){ state.extraIncomes.splice(i,1); renderExtraIncome(); recalcLedger(); }
+
 function recalcLedger(){
-  const incomeTotal = num(document.getElementById('unit-price').value) * num(document.getElementById('head-count').value);
+  const feeTotal = num(document.getElementById('unit-price').value) * num(document.getElementById('head-count').value);
+  const extraTotal = extraIncomeTotal();
+  const incomeTotal = feeTotal + extraTotal;
   document.getElementById('income-total').textContent = KRW(incomeTotal);
+  const bd = document.getElementById('income-breakdown');
+  bd.style.display = extraTotal ? '' : 'none';
+  bd.textContent = extraTotal ? `회비 입금 ${KRW(feeTotal)} + 추가 수입 ${KRW(extraTotal)}` : '';
   const fullTotal = state.fullRefunds.reduce((s,r)=>s+num(r.amount),0);
   document.getElementById('full-refund-total').textContent = KRW(fullTotal);
   const halfTotal = state.halfRefunds.reduce((s,r)=>s+num(r.amount)*0.5,0);
@@ -1284,8 +1406,8 @@ function renderPeople(){
     tr.innerHTML = `
       <td class="name-cell"><input type="text" value="${p.name}" data-i="${i}" data-f="name"></td>
       <td class="p-seat">${seatTagHTML(p.name, lookup)}</td>
-      <td class="chk-cell"><input type="checkbox" data-i="${i}" data-f="non" ${p.non ? 'checked' : ''} aria-label="비주류"></td>
-      <td class="chk-cell"><input type="checkbox" data-i="${i}" data-f="noFood" ${p.noFood ? 'checked' : ''} aria-label="전체 제외"></td>
+      <td class="chk-cell"><button type="button" class="pill-toggle${p.non ? ' on' : ''}" data-i="${i}" data-f="non" aria-pressed="${p.non ? 'true' : 'false'}">비주류</button></td>
+      <td class="chk-cell"><button type="button" class="pill-toggle${p.noFood ? ' on' : ''}" data-i="${i}" data-f="noFood" aria-pressed="${p.noFood ? 'true' : 'false'}">전체 제외</button></td>
       ${foodCell}${drinkCell}${otherCell}
       <td class="num">${KRW(total)}</td>
       <td class="note-cell"><input type="text" value="${escapeHtml(p.note||'')}" data-i="${i}" data-f="note" placeholder="비고"></td>
@@ -1310,6 +1432,16 @@ function renderPeople(){
       if(f==='non'){ syncNonFromPeople(); renderNonChips(); }
       else if(f==='noFood'){ updateDutch(); renderNonChips(); }
       else if(f==='name') renderNonChips();
+    });
+  });
+  body.querySelectorAll('.pill-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const {i,f} = btn.dataset, p = state.people[i];
+      p[f] = !p[f];
+      btn.classList.toggle('on', !!p[f]); btn.setAttribute('aria-pressed', p[f] ? 'true' : 'false');
+      updatePersonRow(parseInt(i));
+      if(f==='non'){ syncNonFromPeople(); renderNonChips(); }
+      else { updateDutch(); renderNonChips(); }
     });
   });
   renderNonChips();
@@ -1628,6 +1760,8 @@ function lgBlock(o){
 }
 function buildBusLedgerHTML(){
   const unit = state.unitPrice, head = state.headCount, incomeTotal = unit*head;
+  const extraList = (state.extraIncomes||[]).filter(r=>String(r.name||'').trim() || num(r.amount));
+  const extraTotal = extraIncomeTotal();
   const fullTotal = state.fullRefunds.reduce((s,r)=>s+num(r.amount),0);
   const halfTotal = state.halfRefunds.reduce((s,r)=>s+num(r.amount)*0.5,0);
   const busFee = state.busFee;
@@ -1643,7 +1777,8 @@ function buildBusLedgerHTML(){
     title: `🚌 ${escapeHtml(state.mountain||'')} 버스비 정산내역`,
     sub: `${state.date ? fmtDate(state.date)+' · ' : ''}(단위:원)`,
     income: [{ label:'회비 입금', amount:incomeTotal,
-      content: `${KRW(unit)} x ${head}명` + (note ? `<div class="small">(${escapeHtml(note)})</div>` : '') }],
+      content: `${KRW(unit)} x ${head}명` + (note ? `<div class="small">(${escapeHtml(note)})</div>` : '') }]
+      .concat(extraList.map(r=>({ label:'추가 수입', amount:num(r.amount), content: escapeHtml(String(r.name||'').trim()) }))),
     expense: [
       { label:'전액 환불', content: fullList.length ? `${fullList.length}명(${fullList.map(r=>escapeHtml(r.name)).join(', ')})` : '', amountHtml: lgMoney(fullTotal) },
       { label:'50% 환불', content: halfList.length ? `${halfList.length}명(${halfList.map(r=>`${escapeHtml(r.name)}(원금 ${KRW(r.amount)})`).join(', ')})` : '', amountHtml: lgMoney(halfTotal) },
@@ -1651,7 +1786,7 @@ function buildBusLedgerHTML(){
         amountHtml: nrTotal ? `${KRW(nrTotal)}<div class="small">지출 제외</div>` : '-' },
       { label:'버스비', content: KRW(busFee), amountHtml: lgMoney(busFee) }
     ],
-    expTotal, balance: incomeTotal-expTotal, balLabel: '운영자금 귀속'
+    expTotal, balance: incomeTotal+extraTotal-expTotal, balLabel: '운영자금 귀속'
   });
 }
 function activeCar(){ return state.activeLedger >= 0 ? (state.carLedgers[state.activeLedger] || null) : null; }
@@ -1803,12 +1938,16 @@ async function saveJpg(){
   if(!currentJpgBlob) return;
   const statusEl = document.getElementById('jpg-status');
   try{
-    const downloads = await claude.use('downloads');
-    if(!downloads){ statusEl.textContent = '이 화면에서는 자동 저장이 지원되지 않아요. 이미지를 길게 눌러 저장해 주세요.'; return; }
+    const downloads = await claudeUse('downloads');
     const tabLabel = { ledger:'정산내역', people:'개인별_식대정산', dutch:'당일_더치페이', lodge:'숙박', settle:'숙박_정산', seat:'좌석표' }[activeTab()];
     const busSuffix = (activeTab()==='seat' && state.busList.length>1) ? '_' + state.busList[state.activeBus].name : '';
     const ledgerSuffix = (activeTab()==='ledger' && state.carLedgers.length) ? '_' + (activeCar() ? activeCar().name : '버스비').replace(/[\\\/:*?"<>|]/g,'') : '';
     const filename = (state.mountain||'버스트립') + '_' + tabLabel + busSuffix + ledgerSuffix + '.jpg';
+    if(!downloads){   /* Claude 밖(내 서버)에서는 브라우저 다운로드로 저장해요 */
+      const a = document.createElement('a'); a.href = URL.createObjectURL(currentJpgBlob); a.download = filename.replace(/[\\\/:*?"<>|]/g,'');
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+      statusEl.textContent = '이미지를 내려받았어요. (폰에서는 저장 창이 뜨거나 사진 앱·다운로드 폴더에 들어가요)'; return;
+    }
     const res = await downloads.save({ filename, data: currentJpgBlob });
     statusEl.textContent = res.status === 'saved' ? '저장했어요.' : '전달했어요.';
   }catch(e){
@@ -1856,7 +1995,7 @@ async function saveXlsx(){
     const filename = ((state.mountain||'버스트립') + '_데이터백업.xlsx').replace(/[\\\/:*?"<>|]/g,'');
     let done = false;
     try{
-      const downloads = (typeof claude !== 'undefined') ? await claude.use('downloads') : null;
+      const downloads = await claudeUse('downloads');
       if(downloads){ const res = await downloads.save({ filename, data: blob }); xlStatus(res.status === 'saved' ? '엑셀로 저장했어요.' : '엑셀 파일을 전달했어요.'); done = true; }
     }catch(e){ if(e && e.code === 'declined'){ xlStatus('저장을 취소했어요.'); return; } }
     if(!done){
@@ -2615,13 +2754,16 @@ function initLodge(){
 const RC_ALC = /소주|맥주|참이슬|진로|처음처럼|새로|카스|테라|하이트|켈리|클라우드|막걸리|청하|와인|위스키|사케|복분자|주류|생맥|병맥|OB|한라산|화요|과하주|맥콜없음/i;
 const RC_DRK = /사이다|콜라|음료|주스|탄산|제로|환타|스프라이트|식혜|커피|아메리카노|미네랄|생수|\b물\b|옥수수수염차|보리차|탄산수/;
 const RC_PROMPT = `첨부한 이미지는 한국 식당 영수증이에요. 아래 JSON만 출력하세요 (설명·코드블록 금지).
-{"total": 숫자, "items":[{"name":"상품명","unit":숫자,"qty":숫자,"amount":숫자,"cat":"food|alcohol|drink"}]}
-- total: 실제 결제(받을) 금액 (부가세 포함 최종 금액). 읽을 수 없으면 0.
+{"total": 숫자, "subtotal": 숫자, "discount": 숫자, "supply": 숫자, "vat": 숫자, "items":[{"name":"상품명","unit":숫자,"qty":숫자,"amount":숫자,"cat":"food|alcohol|drink"}]}
+- total: 실제 결제(받을) 금액 = 할인까지 빼고 부가세 포함한 최종 금액 ("받을금액"). 읽을 수 없으면 0.
+- subtotal: 할인 전 "합계금액". discount: "할인금액"·서비스 할인의 합 (없으면 0). supply: 과세물품가액, vat: 부가세 (없으면 0).
 - items: 영수증의 상품 줄마다 1개. 단가(unit), 수량(qty), 금액(amount)을 각각 읽으세요. 금액은 단가×수량과 같아야 해요. 숫자는 쉼표 없이.
-- 글자가 흐리면 단가×수량=금액, 모든 금액의 합=합계금액이 맞도록 확인해서 가장 앞뒤가 맞는 값을 고르세요.
+- 단가와 금액이 0원인 줄(서비스로 준 상품)은 items에 넣지 마세요.
+- 사진이 비스듬하거나 흐려도 단가×수량=금액, 모든 금액의 합=합계금액(할인 전), 합계금액−할인금액=받을금액, 과세물품가액+부가세=받을금액 이 맞도록 확인해서 가장 앞뒤가 맞는 값을 고르세요.
 - cat: 소주·맥주·막걸리·와인 등 술이면 alcohol, 사이다·콜라·주스·물 등 술이 아닌 마실 것이면 drink, 음식이면 food.
 - 상품명은 영수증에 적힌 그대로. 사진이 영수증이 아니면 {"total":0,"items":[]}.`;
-function rcStatus(t, bad){ const el = document.getElementById('rc-ai-status'); if(el){ el.textContent = t; el.style.color = bad ? 'var(--danger)' : ''; } }
+const RC_TILE_NOTE = `\n- 이미지는 같은 영수증을 위에서 아래로 나눈 조각들이에요 (조금씩 겹쳐요). 겹치는 부분의 상품은 한 번만 쓰세요.`;
+function rcStatus(t, bad){ const el = document.getElementById('rc-ai-status'); if(el){ el.textContent = t; el.style.whiteSpace = 'pre-line'; el.style.color = bad ? 'var(--danger)' : ''; } }
 const RC_HI = new Map();   /* 영수증 읽기용 큰 사진 (저장용 작은 사진 → 큰 사진, 새로고침하면 사라져요) */
 function receiptHiBlob(file){
   return new Promise((resolve,reject)=>{
@@ -2655,12 +2797,67 @@ function dataUrlToBlob(u){
   for(let i=0;i<bin.length;i++) a[i] = bin.charCodeAt(i);
   return new Blob([a], { type:mime });
 }
-async function readReceiptBlob(blob, retry){
-  const sample = (typeof claude !== 'undefined') ? await claude.use('sample') : null;
-  if(!sample) throw { code:'unavailable' };
-  const lim = sample.limits ? await sample.limits() : {};
-  if(!lim.images) throw { code:'images_unavailable' };
-  return await sample.json(RC_PROMPT, { images:[blob], modelTier: retry ? 'complex' : 'default', cache: !retry });
+function loadImgFromBlob(blob){
+  return new Promise((res,rej)=>{ const u = URL.createObjectURL(blob), im = new Image(); im.onload = ()=>{ URL.revokeObjectURL(u); res(im); }; im.onerror = ()=>{ URL.revokeObjectURL(u); rej(new Error('img')); }; im.src = u; });
+}
+function canvasToJpeg(c, fallback){ return new Promise(r=>c.toBlob(b=>r(b || fallback), 'image/jpeg', 0.92)); }
+/* 옆으로 누운 사진을 돌려서 다시 읽을 때 써요 */
+async function rotateBlob(blob, deg){
+  const im = await loadImgFromBlob(blob), w = im.naturalWidth, hh = im.naturalHeight, swap = (deg % 180) !== 0;
+  const c = document.createElement('canvas'); c.width = swap ? hh : w; c.height = swap ? w : hh;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c.width,c.height);
+  g.translate(c.width/2, c.height/2); g.rotate(deg*Math.PI/180); g.drawImage(im, -w/2, -hh/2);
+  return canvasToJpeg(c, blob);
+}
+/* 전달할 때 사진은 약 120만 화소로 줄어들어요. 긴 영수증은 겹치게 나눠서 보내면 작은 글씨가 덜 뭉개져요 */
+async function receiptTiles(blob, maxCount){
+  try{
+    const im = await loadImgFromBlob(blob), W0 = im.naturalWidth, H0 = im.naturalHeight, MP = 1150000;
+    if(maxCount < 2 || W0*H0 <= MP*1.25 || H0/W0 < 1.5) return [blob];
+    const W = Math.min(W0, 1100), sc = W / W0, H = Math.round(H0 * sc);
+    const Ht = Math.floor(MP / W), ov = Math.round(Ht * 0.08);
+    let n = Math.ceil((H - ov) / (Ht - ov)); if(n < 2) return [blob];
+    n = Math.min(n, maxCount, 4);
+    const tileH = Math.ceil((H + (n-1)*ov) / n), out = [];
+    for(let i=0;i<n;i++){
+      const y0 = Math.min(H - tileH, Math.max(0, Math.round(i*(tileH-ov))));
+      const c = document.createElement('canvas'); c.width = W; c.height = tileH;
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,W,tileH);
+      g.drawImage(im, 0, y0/sc, W0, tileH/sc, 0, 0, W, tileH);
+      out.push(await canvasToJpeg(c, blob));
+    }
+    return out;
+  }catch(e){ return [blob]; }
+}
+/* Claude 안에서 열렸을 때만 claude.use가 있어요. 브라우저 확장 등이 claude라는 이름을 따로 만들어 둔 경우도 있어서, 함수인지 확인하고 실패하면 null로 둬요 */
+async function claudeUse(name){
+  try{ if(typeof claude !== 'undefined' && claude && typeof claude.use === 'function') return await claude.use(name); }catch(e){}
+  return null;
+}
+function blobToB64(b){ return new Promise((res,rej)=>{ const r = new FileReader(); r.onload = ()=>res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(b); }); }
+/* 내 서버(Flask)로 보내서 읽어요 — 로그인이 필요해요 */
+async function readReceiptViaServer(blob, retry, deg){
+  const src = deg ? await rotateBlob(blob, deg) : blob;
+  const tiles = await receiptTiles(src, 3);
+  const images = await Promise.all(tiles.map(blobToB64));
+  if(images.reduce((t,x)=>t+x.length,0) > 3300000) throw { code:'toolarge' };   /* Vercel 요청 한도(약 4.5MB) 안으로 */
+  let r;
+  try{
+    r = await fetch('/api/receipt', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json', 'X-Requested-With':'fetch' }, body: JSON.stringify({ images, retry: !!retry }) });
+  }catch(e){ throw { code:'unavailable' }; }
+  let j = null; try{ j = await r.json(); }catch(e){}
+  if(r.status === 401) throw { code:'login' };
+  if(r.status === 404 || r.status === 405) throw { code:'noroute' };
+  if(!r.ok || !j || !j.ok) throw { code:'server', message:(j && j.error) || ('서버 응답 오류 (' + r.status + ')') };
+  return j.data;
+}
+async function readReceiptBlob(blob, retry, deg){
+  const sample = await claudeUse('sample');
+  const lim = (sample && sample.limits) ? await sample.limits() : {};
+  if(!sample || !lim.images) return await readReceiptViaServer(blob, retry, deg);
+  const src = deg ? await rotateBlob(blob, deg) : blob;
+  const tiles = await receiptTiles(src, (lim.images && lim.images.maxCount) || 1);
+  return await sample.json(RC_PROMPT + (tiles.length > 1 ? RC_TILE_NOTE : ''), { images:tiles, modelTier: retry ? 'complex' : 'default', cache: !retry && !deg });
 }
 function rcNormalize(d){
   const raw = (Array.isArray(d && d.items) ? d.items : []).map(it=>{
@@ -2669,26 +2866,37 @@ function rcNormalize(d){
     let cat = ['food','alcohol','drink'].includes(it.cat) ? it.cat : '';
     if(!cat) cat = RC_ALC.test(name) ? 'alcohol' : (RC_DRK.test(name) ? 'drink' : 'food');
     return { name, qty, unit, a1, a2, cat };
-  }).filter(it=>it.name && (it.a1>0 || it.a2>0));
-  const total0 = Math.round(num(d && d.total));
+  }).filter(it=>it.name && (it.a1>0 || it.a2>0));     /* 0원(서비스) 줄은 빼요 */
+  const total0 = Math.round(num(d && d.total)), sub0 = Math.round(num(d && d.subtotal)), disc0 = Math.round(num(d && d.discount));
+  const supply = Math.round(num(d && d.supply)), vat = Math.round(num(d && d.vat));
   const sumOf = f => raw.reduce((t,it)=>t+f(it),0);
-  /* 금액 줄과 단가×수량 중 합계금액에 맞는 쪽을 골라요 */
+  /* 상품 합계가 "받을 금액", "할인 전 합계", "받을 금액+할인" 중 하나와 맞으면 정상이에요 */
+  const targets = s => [total0, sub0, total0>0 ? total0 + disc0 : 0].filter(t=>t>0).includes(s);
   let mode = 'a1';
-  if(total0>0){
+  if(total0>0 || sub0>0){
     const s1 = sumOf(it=>it.a1), s2 = sumOf(it=>it.a2 || it.a1);
-    if(s1!==total0 && s2===total0) mode = 'a2';
+    if(!targets(s1) && targets(s2)) mode = 'a2';
   }
   const items = raw.map(it=>{
     const amount = mode==='a2' ? (it.a2 || it.a1) : (it.a1 || it.a2);
     return { name: it.qty>1 ? `${it.name} ×${it.qty}` : it.name, amount, cat: it.cat };
   });
   const sum = items.reduce((t,it)=>t+it.amount,0);
-  return { items, sum, total: total0 || sum, ok: !total0 || sum===total0 };
+  /* 할인: 상품 합계 − 받을 금액 이 읽은 할인금액과 같을 때만 인정해요 */
+  const gap = total0 > 0 ? sum - total0 : 0;
+  const discount = (gap > 0 && (disc0 === gap || (disc0 === 0 && sub0 === sum))) ? gap : 0;
+  const total = total0 || (sub0 && sub0 === sum ? sum - disc0 : 0) || sum;
+  const vatOk = !(supply && vat && total0) || supply + vat === total0;
+  return { items, sum, total, discount, ok: (!total0 || sum === total0 || discount > 0) && vatOk, vatOk };
 }
 async function applyReceiptData(r, append){
   const D = state.dutch;
   const pick = c => r.items.filter(it=>it.cat===c).map(it=>({ name:it.name, amount:it.amount }));
   const food = pick('food').map(m=>({ ...m, non:'', drk:'' })), alc = pick('alcohol'), drk = pick('drink');
+  if(r.discount > 0 && food.length){   /* 영수증 할인(서비스)은 가장 큰 식대 메뉴에서 빼서 결제 금액과 맞춰요 */
+    let bi = 0; food.forEach((m,i)=>{ if(m.amount > food[bi].amount) bi = i; });
+    food[bi].amount = Math.max(0, food[bi].amount - r.discount);
+  }
   const blank = row => !String(row.name||'').trim() && !num(row.amount);
   if(append){
     D.total = num(D.total) + r.total;
@@ -2714,24 +2922,49 @@ async function autoFillFromBlobs(blobs){
     for(let i=0;i<blobs.length;i++){
       rcStatus(`🤖 영수증 ${i+1}/${blobs.length}장을 읽는 중이에요... (10~30초)`);
       let r = rcNormalize(await readReceiptBlob(blobs[i]));
+      if(!r.items.length && !r.total){   /* 아무것도 못 읽으면 사진이 누워 있을 수 있어서 돌려서 다시 읽어요 */
+        for(const deg of [90, 270]){
+          rcStatus(`🤖 영수증 ${i+1}번을 돌려서 다시 읽어 보는 중이에요...`);
+          try{ const rr = rcNormalize(await readReceiptBlob(blobs[i], false, deg)); if(rr.items.length || rr.total){ r = rr; break; } }catch(e3){}
+        }
+      }
       if(!r.ok){   /* 합계가 안 맞으면 한 번 더, 더 꼼꼼하게 읽어요 */
         rcStatus(`🤖 영수증 ${i+1}번 합계가 안 맞아서 한 번 더 꼼꼼히 읽는 중이에요...`);
         try{ const r2 = rcNormalize(await readReceiptBlob(blobs[i], true)); if(r2.ok || r2.items.length) r = r2.ok ? r2 : (Math.abs(r2.sum-r2.total) < Math.abs(r.sum-r.total) ? r2 : r); }catch(e2){}
       }
       if(!r.items.length && !r.total){ rcStatus(`영수증 ${i+1}번에서 글자를 읽지 못했어요. 더 선명하게 다시 찍어 주세요.`, true); continue; }
+      const sig = r.items.map(x=>x.name+'|'+x.amount).join(';') + '|' + r.total;
+      D.rcSigs = Array.isArray(D.rcSigs) ? D.rcSigs : [];
+      if(D.rcSigs.includes(sig)){ rcStatus(`영수증 ${i+1}번은 이미 입력한 영수증과 같아서 건너뛰었어요.`); continue; }
+      D.rcSigs.push(sig);
       await applyReceiptData(r, append); append = true; ok++; lastR = r;
     }
     if(ok){
       const msg = `✅ 영수증 ${ok}장을 읽어서 입력했어요 · 총금액 ${KRW(state.dutch.total)}. 메뉴명·금액이 맞는지 확인해 주세요.`;
-      rcStatus(msg + ((lastR && ok===1 && Math.abs(lastR.sum-lastR.total)>0) ? ` (상품 합계 ${KRW(lastR.sum)}와 결제금액이 달라요. 금액을 확인해 주세요.)` : ''));
+      let extra = '';
+      if(lastR && ok===1){
+        if(lastR.discount > 0) extra += ` (영수증 할인 ${KRW(lastR.discount)}은 식대에서 뺐어요.)`;
+        else if(Math.abs(lastR.sum-lastR.total)>0) extra += ` (상품 합계 ${KRW(lastR.sum)}와 결제금액이 달라요. 금액을 확인해 주세요.)`;
+        if(lastR.vatOk === false) extra += ' (과세물품가액+부가세가 결제금액과 달라서 숫자를 잘못 읽었을 수 있어요.)';
+      }
+      rcStatus(msg + extra);
     }
   }catch(e){
     const c = e && e.code;
-    rcStatus(c==='not_granted' ? 'Claude 사용을 허용하지 않아서 자동 입력을 건너뛰었어요. 직접 입력해 주세요.'
+    rcStatus(c==='noroute' ? '[C] 서버에 영수증 읽기 기능(/api/receipt)이 없어요. api/index.py를 최신 파일로 바꾼 뒤 서버를 다시 시작해 주세요. 지금은 아래 "영수증 글자 붙여넣기"를 쓸 수 있어요.'
+      : c==='login' ? '로그인이 필요해요. 위 "☁️ 서버에 저장 · 불러오기"에서 로그인하거나 /login 으로 가 주세요. 지금은 아래 "영수증 글자 붙여넣기"를 쓸 수도 있어요.'
+      : c==='server' ? '[서버] ' + (e.message || '영수증을 읽지 못했어요.') + ' 아래 "영수증 글자 붙여넣기"를 쓸 수도 있어요.'
+      : c==='toolarge' ? '사진이 너무 커요. 영수증이 잘 보이게 가까이서 다시 찍어 주세요.'
+      : c==='not_granted' ? 'Claude 사용을 허용하지 않아서 자동 입력을 건너뛰었어요. 직접 입력해 주세요.'
       : c==='rate_limited' ? '요청이 너무 많아요. 잠시 후 \"다시 읽어서 입력\"을 눌러 주세요.'
-      : c==='unavailable' ? '[A] 이 화면에서는 Claude 연결이 안 돼요. Claude 앱(또는 claude.ai에 로그인한 브라우저)에서 이 링크를 열어 주세요. 지금은 아래 "영수증 글자 붙여넣기"를 이용하거나 직접 입력해 주세요.'
+      : c==='unavailable' ? '[A] 이 화면은 Claude에 연결되지 않아서 사진을 자동으로 읽을 수 없어요.\n① Claude 앱(또는 claude.ai) 안에서 이 페이지를 열어 보세요. 카카오톡·크롬·사파리로 링크를 바로 연 화면에서는 안 될 수 있어요.\n② 안 되면 바로 아래 "영수증 글자 붙여넣기"를 쓰세요. 폰 사진 앱에서 영수증 글자를 복사해 붙여 넣으면 돼요.\n③ 그것도 어려우면 금액을 직접 입력해 주세요.'
       : c==='images_unavailable' ? '[B] 사진 전송 권한이 없어요. 페이지를 완전히 닫았다가 링크를 다시 열고, 허용 창이 뜨면 허용해 주세요.'
-      : '영수증을 읽지 못했어요. 다시 시도하거나 직접 입력해 주세요.', true);
+      : '영수증을 읽지 못했어요. 다시 시도하거나 직접 입력해 주세요.\n(원인: ' + ((e && (e.message || e.code || e.type)) || String(e)) + ')', true);
+    try{ console.error('receipt error', e); }catch(e5){}
+    if(c==='unavailable'){   /* Claude 연결이 없는 화면이면 붙여넣기 칸으로 안내해요 */
+      const ta = document.getElementById('rc-paste');
+      if(ta){ try{ ta.scrollIntoView({ block:'center', behavior:'smooth' }); }catch(e4){} ta.style.outline = '2px solid var(--accent)'; ta.style.outlineOffset = '1px'; }
+    }
   } finally { btn.disabled = false; }
 }
 /* 영수증 글자(폰의 텍스트 인식으로 복사한 글)를 읽어서 상품·금액으로 나눠요 */
@@ -2748,40 +2981,52 @@ function rcNums(line){
 }
 function rcParseText(txt){
   const lines = String(txt||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-  const items = [], totals = [];
-  let name = '', buf = [];
+  const nameOf = ln => ln.replace(/\d{1,3}(?:,\d{3})+|\d+/g,' ').replace(/[^가-힣A-Za-z()\s&.+\-]/g,' ').replace(/\s+/g,' ').trim();
+  const isTotal = ln => RC_TOTAL.test(ln) && !/부가|과세|면세|물품/.test(ln);
+  const totals = [];
+  lines.forEach((ln,i)=>{
+    if(!isTotal(ln)) return;
+    let n = rcNums(ln); if(!n.length && lines[i+1]) n = rcNums(lines[i+1]);
+    if(n.length) totals.push(Math.max(...n));
+  });
+  const firstTotal = lines.findIndex(isTotal);
+  const body = firstTotal>=0 ? lines.slice(0, firstTotal) : lines;   /* 합계 줄 앞까지가 상품 영역 */
+  /* A. 상품명 바로 뒤에 숫자가 오는 보통 모양 */
+  const itemsA = []; let name = '', buf = [];
   const flush = ()=>{
     for(let i=0;i+2<buf.length;i++){
       const [u,q,a] = [buf[i],buf[i+1],buf[i+2]];
-      if(u>0 && q>0 && q<1000 && u*q===a){
-        if(name){ items.push({ name, qty:q, unit:u, amount:a }); buf = buf.slice(i+3); name = ''; return true; }
-      }
+      if(name && u>0 && q>0 && q<1000 && u*q===a){ itemsA.push({ name, qty:q, unit:u, amount:a }); buf = buf.slice(i+3); name = ''; return; }
     }
-    return false;
   };
-  for(const ln of lines){
-    const nums = rcNums(ln);
-    const text = ln.replace(/\d{1,3}(?:,\d{3})+|\d+/g,' ').replace(/[^가-힣A-Za-z()\s&.+\-]/g,' ').replace(/\s+/g,' ').trim();
-    if(RC_TOTAL.test(ln) && !/부가|과세|면세|물품/.test(ln)){
-      if(nums.length) totals.push(Math.max(...nums));
-      continue;
-    }
-    if(RC_NOISE.test(ln) && !nums.length){ name=''; buf=[]; continue; }
-    if(RC_NOISE.test(ln)) continue;
-    if(text.length>=2 && /[가-힣A-Za-z]/.test(text)){
-      if(name && !buf.length){ /* 이름 줄이 연달아 나오면 새 이름으로 */ }
-      if(buf.length && flush()){ /* 앞 상품 마무리 */ }
-      name = text; if(!nums.length) buf = [];
-    }
-    buf.push(...nums);
-    flush();
+  for(const ln of body){
+    const nums = rcNums(ln), text = nameOf(ln);
+    if(RC_NOISE.test(ln)){ if(!nums.length){ name=''; buf=[]; } continue; }
+    if(text.length>=2){ flush(); name = text; if(!nums.length) buf = []; }
+    buf.push(...nums); flush();
   }
+  /* B. 상품명이 먼저 쭉 나오고 숫자가 따로 나오는 모양 (폰의 글자 인식이 세로로 읽을 때) */
+  const names = [], flat = [];
+  for(const ln of body){
+    if(RC_NOISE.test(ln)) continue;
+    const text = nameOf(ln); if(text.length>=2) names.push(text);
+    flat.push(...rcNums(ln));
+  }
+  const triples = [];
+  for(let i=0;i+2<flat.length;){
+    const [u,q,a] = [flat[i],flat[i+1],flat[i+2]];
+    if(u>0 && q>0 && q<1000 && u*q===a){ triples.push([u,q,a]); i+=3; } else i++;
+  }
+  const itemsB = [];
+  if(triples.length && names.length>=triples.length){
+    const nm = names.slice(names.length-triples.length);
+    triples.forEach((t,i)=> itemsB.push({ name:nm[i], qty:t[1], unit:t[0], amount:t[2] }));
+  }
+  const items = itemsB.length > itemsA.length ? itemsB : itemsA;
   const sum = items.reduce((t,i)=>t+i.amount,0);
-  /* 합계 후보 중 상품 합과 같은 값을 먼저, 없으면 가장 큰 값 */
   const total = totals.find(t=>t===sum) || (totals.length ? Math.max(...totals) : sum);
   return { items, sum, total };
 }
-
 async function pasteFillReceipt(){
   const ta = document.getElementById('rc-paste'), btn = document.getElementById('rc-paste-go');
   const txt = ta.value;
@@ -2790,8 +3035,7 @@ async function pasteFillReceipt(){
   if(!p.items.length){ rcStatus('상품 줄을 찾지 못했어요. 상품명과 단가·수량·금액이 함께 보이게 다시 복사해 주세요.', true); return; }
   const D = state.dutch;
   const hasData = num(D.total)>0 || (D.alcohol||[]).some(x=>num(x.amount)) || (D.drinks||[]).some(x=>num(x.amount)) || (D.menus||[]).some(x=>num(x.amount));
-  let append = !!D.rcFilled;
-  if(!append && hasData && !(await openDialog('이미 입력된 총금액·식대·주류·음료수가 영수증 내용으로 바뀌어요. 계속할까요?', { okText:'영수증으로 입력' }))){ rcStatus('입력을 취소했어요.'); return; }
+  const append = !!D.rcFilled;   /* 붙여넣기 버튼은 직접 누른 거라 따로 묻지 않고 바로 바꿔요 */
   btn.disabled = true;
   try{
     const items = p.items.map(it=>{
@@ -2808,7 +3052,7 @@ function initReceiptAI(){
   document.getElementById('rc-reread').addEventListener('click', async ()=>{
     const list = rcList('dutch');
     if(!list.length){ rcStatus('먼저 영수증 사진을 올려 주세요.', true); return; }
-    state.dutch.rcFilled = false;
+    state.dutch.rcFilled = false; state.dutch.rcSigs = [];
     await autoFillFromBlobs(list.map(u=> RC_HI.get(u) || dataUrlToBlob(u)));
   });
 }
@@ -3072,7 +3316,7 @@ function dutchResultRows(c){
 }
 function updateDutch(){
   const c = dutchCalc(), $ = id=>document.getElementById(id);
-  $('dp-drk').textContent = c.drk;
+  $('dp-drk').textContent = c.drk + '명';
   $('dp-alc-sum').textContent = KRW(c.alc); $('dp-drk-sum').textContent = KRW(c.drink);
   $('dp-menu-sum').textContent = KRW(c.food);
   document.querySelectorAll('#dp-menu-list .menu-row').forEach((row,i)=>{
@@ -3101,9 +3345,11 @@ function renderMenuRows(){
     const row = document.createElement('div'); row.className = 'menu-row';
     const cnt = v => (v==='' || v==null) ? '' : v;
     row.innerHTML = `
-      <div class="m-f m-top"><label>메뉴명</label><input type="text" placeholder="${DP_PH.menus}" value="${escapeHtml(r.name||'')}" data-f="name"></div>
-      <button class="icon-btn" aria-label="메뉴 삭제">×</button>
-      <div class="m-f m-wide"><label>금액 (비우면 자동)</label><input class="m-amt num-in money" type="text" inputmode="numeric" placeholder="자동" value="${r.amount||''}" data-f="amount"></div>
+      <div class="m-line">
+        <div class="m-f m-name"><label>메뉴명</label><input type="text" placeholder="${DP_PH.menus}" value="${escapeHtml(r.name||'')}" data-f="name"></div>
+        <div class="m-f m-amtbox"><label>금액</label><input class="m-amt num-in money" type="text" inputmode="numeric" placeholder="자동" value="${r.amount||''}" data-f="amount"></div>
+        <button class="icon-btn" aria-label="메뉴 삭제">×</button>
+      </div>
       <div class="m-f m-non"><label>비주류 먹은 인원</label><input class="m-non num-in" type="number" inputmode="numeric" min="0" placeholder="전원" value="${cnt(r.non)}" data-f="non"></div>
       <div class="m-f m-drk"><label>주류 먹은 인원</label><input class="m-drk num-in" type="number" inputmode="numeric" min="0" placeholder="전원" value="${cnt(r.drk)}" data-f="drk"></div>`;
     row.querySelectorAll('input').forEach(el=>{
@@ -3141,11 +3387,26 @@ function addDutchItem(kind){
   const ins = document.getElementById(DP_BOX[kind]).querySelectorAll('input[data-f="name"]');
   if(ins.length) ins[ins.length-1].focus();
 }
+/* 숫자 칸에 0이 들어 있으면, 칸을 눌러 입력할 때 0이 사라져요 (메뉴의 먹은 인원 칸은 0명과 비움이 달라서 제외) */
+document.addEventListener('focusin', e=>{
+  const el = e.target;
+  if(el && el.tagName==='INPUT' && el.classList.contains('num-in') && !el.classList.contains('m-non') && !el.classList.contains('m-drk') && el.value==='0'){
+    el.value = ''; el.dispatchEvent(new Event('input', { bubbles:true }));
+  }
+});
 function initDutch(){
   const D = state.dutch, $ = id=>document.getElementById(id);
-  $('dp-head').value = D.head; $('dp-non').value = D.non; $('dp-total').value = D.total; refreshMoney();
+  $('dp-head').value = D.head || ''; $('dp-non').value = D.non || ''; $('dp-total').value = D.total || ''; refreshMoney();
   [['dp-head','head'],['dp-non','non'],['dp-total','total']].forEach(([id,k])=>{
     $(id).addEventListener('input', e=>{ state.dutch[k] = e.target.value==='' ? '' : num(e.target.value); updateDutch(); });
+  });
+  $('dp-reset').addEventListener('click', async ()=>{
+    if(!(await openDialog('총인원 · 비주류 인원 · 총금액 · 비고를 비울까요? (이름 목록과 메뉴 · 주류 · 음료수 금액은 그대로 둬요)', { okText:'초기화' }))) return;
+    const d = state.dutch;
+    d.head = 0; d.total = 0; d.totalNote = '';
+    if(!d.nonAuto){ d.non = 0; d.nonManual = 0; $('dp-non').value = ''; }
+    $('dp-head').value = ''; $('dp-total').value = '';
+    refreshMoney(); syncNonFromPeople(); updateDutch(); refreshDutchMessage(); saveState();
   });
   $('dp-note').value = D.note || ''; $('dp-account').value = D.account || '';
   $('dp-note').addEventListener('input', e=>{ state.dutch.note = e.target.value; refreshDutchMessage(); saveState(); });
@@ -3220,8 +3481,7 @@ async function shareJpg(){
 }
 function initDutchSend(){
   const $ = id=>document.getElementById(id);
-  $('dp-total-note').value = state.dutch.totalNote || '';
-  $('dp-total-note').addEventListener('input', e=>{ state.dutch.totalNote = e.target.value; refreshDutchMessage(); saveState(); });
+  state.dutch.totalNote = '';   /* 총금액 비고란은 없앴어요 (예전에 적어 둔 내용도 더는 나오지 않아요) */
   $('dp-send-people').checked = !!state.dutch.sendPeople;
   $('dp-send-people').addEventListener('change', e=>{ state.dutch.sendPeople = e.target.checked; refreshDutchMessage(true); saveState(); });
   $('dp-msg').addEventListener('input', ()=>{ dpMsgDirty = true; });
@@ -3412,6 +3672,7 @@ function renderImportInputs(){
 
 loadState();
 normNoRefunds();
+state.extraIncomes = Array.isArray(state.extraIncomes) ? state.extraIncomes : [];
 document.getElementById('mountain').value = state.mountain;
 document.getElementById('ev-date').value = state.date;
 document.getElementById('club').value = state.club;
@@ -3474,10 +3735,125 @@ renderNonChips();
 renderRefundRows('full');
 renderRefundRows('half');
 renderNoRefund();
+renderExtraIncome();
 recalcLedger();
 renderPeople();
 renderSeatTab();
 refreshMoney();
+</script>
+
+<script>
+/* ===== 서버에 저장 · 불러오기 (Flask /api/data) ===== */
+(function(){
+  const $ = id => document.getElementById(id);
+  const NAME_RE = /^[0-9A-Za-z가-힣_\-]{1,60}$/;
+  function st(msg, bad){ const e = $('sv-status'); e.textContent = msg || ''; e.style.color = bad ? 'var(--danger)' : ''; }
+  function defaultName(){
+    const m = String(state.mountain||'').replace(/[^0-9A-Za-z가-힣_\-]/g,'');
+    const d = String(state.date||'').replace(/-/g,'').slice(4);
+    return (m || '버스트립') + (d ? '_' + d : '');
+  }
+  async function api(method, path, body){
+    let r;
+    try{
+      r = await fetch(path, { method, credentials:'same-origin', headers: Object.assign({ 'X-Requested-With':'fetch' }, body ? { 'Content-Type':'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
+    }catch(e){ throw new Error('서버에 연결하지 못했어요. 서버(Vercel) 주소로 연 화면에서만 돼요.'); }
+    let j = null; try{ j = await r.json(); }catch(e){}
+    if(r.status === 401){
+      st('로그인이 필요해요.', true);
+      if(await openDialog('로그인이 필요해요. 로그인 화면으로 갈까요? (입력한 내용은 이 기기에 그대로 남아 있어요)', { okText:'로그인' })) location.href = '/login?next=' + encodeURIComponent(location.pathname);
+      throw new Error('로그인이 필요해요.');
+    }
+    if(!r.ok) throw new Error((j && j.error) || ('서버 응답 오류 (' + r.status + ')'));
+    return j;
+  }
+  function payload(){          /* 사진은 빼고 보내요 */
+    const d = JSON.parse(JSON.stringify(state));
+    delete d.seedId;
+    d.receipts = { bus:[], dutch:[], lodge:[] };
+    (d.carLedgers||[]).forEach(c=>{ c.receipts = []; });
+    if(d.bus) d.bus.photo = '';
+    (d.busList||[]).forEach(b=>{ if(b.data && b.data.bus) b.data.bus.photo = ''; });
+    return d;
+  }
+  async function refreshList(selectName){
+    const j = await api('GET', '/api/data');
+    const sel = $('sv-select'); sel.innerHTML = '';
+    j.names.forEach(n=>{ const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
+    if(selectName) sel.value = selectName;
+    $('sv-pick').style.display = j.names.length ? 'flex' : 'none';
+    return j.names;
+  }
+  async function run(fn){
+    const btns = ['sv-save','sv-list','sv-load','sv-del'].map($);
+    btns.forEach(b=>b.disabled = true);
+    try{ await fn(); }catch(e){ st(e.message || '실패했어요.', true); }
+    finally{ btns.forEach(b=>b.disabled = false); }
+  }
+  $('sv-save').addEventListener('click', ()=>run(async ()=>{
+    const name = $('sv-name').value.trim();
+    if(!NAME_RE.test(name)){ st('저장 이름은 한글·영문·숫자·_ - 만 쓰고 60자 이하로 적어 주세요.', true); return; }
+    const names = await api('GET', '/api/data').then(j=>j.names);
+    if(names.includes(name) && !(await openDialog('"' + name + '" 이름으로 이미 저장돼 있어요. 덮어쓸까요?', { okText:'덮어쓰기' }))){ st('저장을 취소했어요.'); return; }
+    const j = await api('PUT', '/api/data/' + encodeURIComponent(name), payload());
+    st('✅ 서버에 저장했어요 · ' + name + ' (' + Math.ceil(j.bytes/1024) + 'KB)');
+    await refreshList(name);
+  }));
+  $('sv-list').addEventListener('click', ()=>run(async ()=>{
+    const names = await refreshList();
+    st(names.length ? '저장된 ' + names.length + '개를 불러왔어요. 고른 뒤 ⬇️ 불러오기를 눌러 주세요.' : '서버에 저장된 데이터가 없어요.');
+  }));
+  $('sv-load').addEventListener('click', ()=>run(async ()=>{
+    const name = $('sv-select').value; if(!name) return;
+    const data = await api('GET', '/api/data/' + encodeURIComponent(name));
+    if(!data || typeof data !== 'object' || !Array.isArray(data.seats)){ st('데이터를 읽지 못했어요.', true); return; }
+    if(!(await openDialog('"' + name + '" 내용으로 지금 입력한 내용을 모두 바꿀까요?', { okText:'불러오기' }))){ st('불러오기를 취소했어요.'); return; }
+    data.seedId = state.seedId;
+    data.receipts = state.receipts || { bus:[], dutch:[], lodge:[] };
+    if(data.bus && state.bus) data.bus.photo = state.bus.photo || '';
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    location.reload();
+  }));
+  $('sv-del').addEventListener('click', ()=>run(async ()=>{
+    const name = $('sv-select').value; if(!name) return;
+    if(!(await openDialog('서버에서 "' + name + '"을(를) 삭제할까요? 되돌릴 수 없어요.', { okText:'삭제' }))) return;
+    await api('DELETE', '/api/data/' + encodeURIComponent(name));
+    st('🗑️ 삭제했어요 · ' + name);
+    await refreshList();
+  }));
+  $('sv-box').addEventListener('toggle', ()=>{
+    if(!$('sv-box').open) return;
+    if(!$('sv-name').value) $('sv-name').value = defaultName();
+  });
+})();
+</script>
+
+<script>
+/* 카드 접기·펼치기 — 제목을 누르면 접히고, 마지막 상태를 이 기기에 기억해요 */
+(function(){
+  function foldable(id, key){
+    const h = document.getElementById(id); if(!h) return;
+    const card = h.closest('.card'), K = 'bus_fold_' + key;
+    function set(collapsed){
+      card.classList.toggle('collapsed', collapsed);
+      h.setAttribute('aria-expanded', String(!collapsed));
+      h.querySelector('.caret').textContent = collapsed ? '▸' : '▾';
+      h.querySelector('.fold-hint').textContent = collapsed ? '펼치기' : '접기';
+      try{ localStorage.setItem(K, collapsed ? '1' : '0'); }catch(e){}
+    }
+    h.addEventListener('click', ()=>set(!card.classList.contains('collapsed')));
+    h.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); h.click(); } });
+    try{ if(localStorage.getItem(K) === '1') set(true); }catch(e){}
+  }
+  foldable('seat-assign-toggle', 'seat_assign');
+  foldable('bus-info-toggle', 'bus_info');
+  foldable('refund-toggle', 'refund');
+  foldable('car-info-toggle', 'car_info');
+  foldable('people-fold-toggle', 'people');
+  foldable('people-receipt-toggle', 'people_receipt');
+  foldable('dp-result-toggle', 'dp_result');
+  foldable('dp-send-toggle', 'dp_send');
+})();
 </script>
 </body>
 </html>
